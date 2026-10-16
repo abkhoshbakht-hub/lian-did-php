@@ -1,0 +1,62 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        // جدول کاربران دقیقاً بر اساس مدل Prisma شما
+        Schema::create('users', function (Blueprint $table) {
+            $table->string('id', 30)->primary(); // پشتیبانی از cuid
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            
+            // فیلدهای اختصاصی شما
+            $table->string('role')->default('USER');
+            $table->json('permissions')->nullable(); 
+            $table->string('avatar')->nullable();
+            $table->text('bio')->nullable();
+            $table->string('phone')->nullable();
+            $table->boolean('isActive')->default(true);
+            
+            // فیلدهای استاندارد لاراول
+            $table->timestamp('email_verified_at')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        // جدول فراموشی رمز عبور (جایگزین resetToken شما)
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // جدول مدیریت نشست‌ها (لاگین کاربران)
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('user_id', 30)->nullable()->index(); // هماهنگ شده با cuid
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};

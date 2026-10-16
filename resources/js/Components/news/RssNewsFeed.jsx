@@ -1,0 +1,237 @@
+import React, { useState, useEffect, useMemo } from 'react';
+
+const COVER_CATS = [
+  { id: 'all', label: 'همه' },
+  { id: 'national', label: 'سراسری' },
+  { id: 'sports', label: 'ورزشی' },
+  { id: 'bushehr', label: 'بوشهر' },
+];
+
+const COVERS_SHOWN = 4;
+
+// تابع کمکی برای فیلتر کردن کاورها (موقتی تا زمان اتصال به بک‌اند)
+const filterDisplayable = (covers) => covers;
+
+export default function RssNewsFeed() {
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [showMore, setShowMore] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [covers, setCovers] = useState([]);
+  const [coversLoading, setCoversLoading] = useState(false);
+  const [coverCat, setCoverCat] = useState('all');
+
+  const displayableCovers = useMemo(() => filterDisplayable(covers), [covers]);
+  const filteredCovers = coverCat === 'all' ? displayableCovers : displayableCovers.filter((c) => c.category === coverCat);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // شبیه‌سازی دریافت اخبار از سرور
+  const fetchNews = (category) => {
+    setLoading(true);
+    setTimeout(() => {
+      // داده‌های تستی برای نمایش ظاهر کامپوننت
+      const mockData = [
+        { id: '1', title: 'خبر فوری: آغاز ثبت‌نام طرح‌های جدید مسکن', link: '#', sourceName: 'فارس', category: 'ملی', publishedAt: new Date(Date.now() - 300000).toISOString() },
+        { id: '2', title: 'ترافیک سنگین در محورهای خروجی استان بوشهر', link: '#', sourceName: 'ایرنا', category: 'بوشهر', publishedAt: new Date(Date.now() - 3600000).toISOString() },
+        { id: '3', title: 'افزایش بودجه عمرانی استان در سال آینده', link: '#', sourceName: 'ایسنا', category: 'بوشهر', publishedAt: new Date(Date.now() - 7200000).toISOString() },
+        { id: '4', title: 'تیم ملی والیبال راهی مسابقات جهانی شد', link: '#', sourceName: 'ورزش سه', category: 'ملی', publishedAt: new Date(Date.now() - 86400000).toISOString() },
+      ];
+      setNews(mockData);
+      setLoading(false);
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'روزنامه') {
+      setCoversLoading(true);
+      setTimeout(() => {
+        // داده‌های تستی برای روزنامه‌ها
+        setCovers([
+          { id: '1', name: 'کیهان', slug: 'kayhan', category: 'national', today: { imageUrl: '/og-image.png', thumbnailUrl: '/og-image.png' } },
+          { id: '2', name: 'خبر ورزشی', slug: 'khabar-varzeshi', category: 'sports', today: { imageUrl: '/og-image.png', thumbnailUrl: '/og-image.png' } },
+        ]);
+        setCoversLoading(false);
+      }, 500);
+    } else {
+      fetchNews(activeTab);
+    }
+  }, [activeTab]);
+
+  const MOBILE_INITIAL = 8;
+  const filteredNews = !news ? [] : (activeTab === 'all'
+    ? news.filter(n => n.category !== 'روزنامه')
+    : news.filter(n => n.category === activeTab)
+  );
+
+  const visibleNews = (isMobile && !showMore) ? filteredNews.slice(0, MOBILE_INITIAL) : filteredNews;
+  const hasMore = isMobile && filteredNews.length > MOBILE_INITIAL;
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    if (minutes < 1) return 'همین الان';
+    if (minutes < 60) return `${minutes} دقیقه پیش`;
+    if (hours < 24) return `${hours} ساعت پیش`;
+    return date.toLocaleDateString('fa-IR');
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm h-full flex flex-col">
+      {/* هدر */}
+      <div className="bg-gradient-to-l from-[#1B365D] to-[#2a4a7a] px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7m-6 0a1 1 0 11-2 0 1 1 0 012 0z" />
+            </svg>
+          </div>
+          <h2 className="text-base font-extrabold text-white">اخبار لحظه‌ای</h2>
+        </div>
+      </div>
+
+      {/* تب‌ها */}
+      <div className="border-b border-gray-100 px-6">
+        <div className="flex gap-0 justify-center md:justify-start">
+          {[
+            { key: 'all', label: 'همه' },
+            { key: 'بوشهر', label: 'اخبار استان' },
+            { key: 'ملی', label: 'اخبار ایران و جهان' },
+            { key: 'روزنامه', label: 'پیشخوان روزنامه‌ها' },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setShowMore(false); }}
+              className={`px-5 py-3 text-[13px] font-bold border-b-2 transition-all ${
+                activeTab === tab.key
+                  ? 'border-[#C9A96E] text-[#1B365D]'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* لیست اخبار */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {activeTab === 'روزنامه' ? (
+          coversLoading ? (
+            <div className="p-12 text-center">
+              <div className="w-8 h-8 border-2 border-[#C9A96E] border-t-[#1B365D] rounded-full animate-spin mx-auto" />
+              <p className="text-sm text-gray-400 mt-4">در حال دریافت جلدها...</p>
+            </div>
+          ) : displayableCovers.length === 0 ? (
+            <div className="p-12 text-center text-gray-400">
+              <p className="text-sm">در حال دریافت صفحات اول روزنامه‌ها...</p>
+            </div>
+          ) : (
+            <div className="p-3">
+              <p className="text-[11px] text-gray-400 text-center mb-1">صفحه اول روزنامه‌های امروز ایران، ورزشی و بوشهر</p>
+              <div className="flex gap-1.5 justify-center mb-3 flex-wrap">
+                {COVER_CATS.map((c) => (
+                  <button key={c.id} onClick={() => setCoverCat(c.id)} aria-pressed={coverCat === c.id} className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors ${coverCat === c.id ? 'bg-[#1B365D] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c.label}</button>
+                ))}
+              </div>
+              {filteredCovers.length === 0 && <p className="text-center text-gray-400 text-xs py-6">صفحه امروز هنوز منتشر نشده است</p>}
+              <div className="space-y-4">
+              {filteredCovers.slice(0, COVERS_SHOWN).map((p) => (
+                <a key={p.id} href={`/newspapers/${p.slug}`} className="block group">
+                  <img
+                    src={p.today.thumbnailUrl || p.today.imageUrl}
+                    alt={`صفحه اول روزنامه ${p.name}`}
+                    className="w-full rounded-xl border border-gray-100 shadow-sm group-hover:shadow-md transition-shadow"
+                    loading="lazy"
+                  />
+                  <div className="text-center text-xs font-bold text-[#1B365D] mt-1.5">{p.name}</div>
+                </a>
+              ))}
+              {filteredCovers.length > COVERS_SHOWN && (
+                <a href="/newspapers" className="block w-full py-2.5 text-sm font-bold text-white bg-[#1B365D] hover:bg-[#0f2d52] transition-colors rounded-xl text-center">
+                  بیشتر
+                </a>
+              )}
+              </div>
+            </div>
+          )
+        ) : loading ? (
+          <div className="p-12 text-center">
+            <div className="w-8 h-8 border-2 border-[#C9A96E] border-t-[#1B365D] rounded-full animate-spin mx-auto" />
+            <p className="text-sm text-gray-400 mt-4">در حال دریافت اخبار...</p>
+          </div>
+        ) : filteredNews.length === 0 ? (
+          <div className="p-12 text-center text-gray-400">
+            <p className="text-sm">خبری یافت نشد</p>
+            <button onClick={() => fetchNews(activeTab)} className="text-xs text-[#1B365D] hover:text-[#C9A96E] mt-2 font-bold">
+              تلاش مجدد
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {visibleNews.map((item) => (
+              <a
+                key={item.id}
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-4 py-3 hover:bg-gray-50 transition-colors group"
+              >
+                <div className="flex gap-3">
+                  {item.image && (
+                    <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[12px] font-bold text-gray-800 group-hover:text-[#1B365D] transition-colors line-clamp-2 leading-relaxed">
+                      {item.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[10px] font-bold text-[#C9A96E] bg-[#C9A96E]/10 px-1.5 py-0.5 rounded">
+                        {item.sourceName}
+                      </span>
+                      {item.publishedAt && (
+                        <span className="text-[10px] text-gray-400">
+                          {formatTime(item.publishedAt)}
+                        </span>
+                      )}
+                      {item.category && (
+                        <span className="text-[10px] text-gray-400">
+                          {item.category}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </a>
+            ))}
+            {hasMore && (
+              <button
+                onClick={() => setShowMore(true)}
+                className="w-full py-3 text-sm font-bold text-[#1B365D] hover:text-[#C9A96E] transition-colors"
+              >
+                اخبار بیشتر
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
