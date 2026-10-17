@@ -296,12 +296,7 @@ Route::get('/newspapers/{slug}', function ($slug) {
     ]);
 })->name('newspapers.show');
 
-Route::get('/about', function () {
-    return Inertia\Inertia::render('About', [
-        'settings' => \App\Support\SettingStore::all(),
-        'page'     => DB::table('static_pages')->where('slug', 'about')->first(),
-    ]);
-})->name('about');
+Route::get('/about', fn () => Inertia\Inertia::render('About'))->name('about');
 
 // The hero slot in the database links here, so it must resolve.
 Route::get('/about/{slug}', function ($slug) {
@@ -388,11 +383,7 @@ Route::get('/api/rss/feed', function () {
     ]);
 })->name('rss.feed');
 
-Route::get('/contact', function () {
-    return Inertia\Inertia::render('Contact', [
-        'settings' => \App\Support\SettingStore::all(),
-    ]);
-})->name('contact');
+Route::get('/contact', fn () => Inertia\Inertia::render('Contact'))->name('contact');
 
 Route::post('/contact', function (Illuminate\Http\Request $request) {
     $v = $request->validate([
