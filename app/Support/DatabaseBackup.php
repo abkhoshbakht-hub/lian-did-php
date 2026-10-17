@@ -235,23 +235,48 @@ class DatabaseBackup
 
             $query = DB::table($table);
 
-            // not every table has an `id` (article_tag, site_settings, ...)
+            // Not every table has an `id` (article_tag, site_settings, ...).
+            // Order by the primary key so the dump is deterministic, then walk
+            // it with cursor() - chunk()/offset can silently skip rows when the
+            // ordering column repeats.
             $pk = $this->primaryKey($table);
             if ($pk) {
                 $query->orderBy($pk[0]);
             }
 
             $written = 0;
-            $query->chunk(500, function ($rows) use ($out, $table, &$written) {
-                foreach ($rows as $row) {
-                    $data = (array) $row;
-                    $cols = array_map(fn ($c) => '`' . $c . '`', array_keys($data));
-                    $vals = array_map(fn ($v) => $this->quote($v), array_values($data));
 
-                    fwrite($out, "INSERT INTO `{$table}` (" . implode(',', $cols) . ") VALUES (" . implode(',', $vals) . ");\n");
-                    $written++;
+            $batch = [];
+            $flush = function () use (&$batch, $out, $table, &$written) {
+                if (! $batch) {
+                    return;
                 }
-            });
+                fwrite($out, "INSERT INTO `{$table}` (".implode(',', $batch['cols']).") VALUES\n");
+                fwrite($out, implode(",\n", $batch['vals']).";\n");
+                $written += $batch['n'];
+                $batch = [];
+            };
+
+            foreach ($query->cursor() as $row) {
+                $data = (array) $row;
+                $cols = array_map(fn ($c) => '`'.$c.'`', array_keys($data));
+                $vals = array_map(fn ($v) => $this->quote($v), array_values($data));
+
+                if (! isset($batch['cols']) || $batch['cols'] !== $cols) {
+                    $flush();
+                    $batch['cols'] = $cols;
+                    $batch['vals'] = [];
+                    $batch['n'] = 0;
+                }
+
+                $batch['vals'][] = '('.implode(',', $vals).')';
+                $batch['n']++;
+
+                if ($batch['n'] >= 500) {
+                    $flush();
+                }
+            }
+            $flush();
 
             fwrite($out, "\n-- {$written} row(s)\n");
         }
