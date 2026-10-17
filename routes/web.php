@@ -104,6 +104,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // تنظیم عکس
     Route::get('/image-settings', [$s, 'imageSettings'])->name('admin.image-settings');
     Route::post('/image-settings', [$s, 'saveImageSettings'])->name('admin.image-settings.save');
+    Route::post('/upload', [\App\Http\Controllers\Admin\MediaController::class, 'upload'])->name('admin.upload');
 
     // تنظیمات متنی (هر گروه یک جفت مسیر)
     Route::get('/settings/logo', [$s, 'settingsPage'])->defaults('group', 'logo')->name('admin.settings.logo');

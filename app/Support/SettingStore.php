@@ -66,15 +66,17 @@ class SettingStore
         return $out;
     }
 
+    /**
+     * Image settings are stored as plain keys (image_max_dim, image_format, ...)
+     * rather than under an "image." prefix, so read them directly.
+     */
     public static function imageSettings(): array
     {
-        $current = self::group('image');
+        $current = self::all();
 
-        // stored values arrive as `image_max_mb` style keys
         $out = [];
         foreach (self::IMAGE_DEFAULTS as $key => $default) {
-            $short = str_replace('image_', '', $key);
-            $out[$key] = $current[$short] ?? $current[$key] ?? $default;
+            $out[$key] = $current[$key] ?? $default;
         }
 
         return $out;
