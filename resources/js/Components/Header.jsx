@@ -87,11 +87,11 @@ const categories = [
     { name: 'فیلم', slug: 'videos', href: '/gallery/videos' },
   ]},
   {
-    name: 'مناطق',
-    slug: 'regions',
-    href: '/regions',
+    name: 'شهرهای استان بوشهر',
+    slug: 'ostanha',
+    href: '/category/bushahr/cities',
     subcategories: [
-      { name: 'نقشهٔ شهرستان‌های بوشهر', slug: 'map', href: '/regions' },
+      { name: 'شهرها', slug: 'cities', href: '/category/bushahr/cities' },
     ],
   },
 ];

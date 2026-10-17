@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import MainLayout from '../Layouts/MainLayout';
 import BushehrMap from '../Components/news/BushehrMap';
-import { COUNTIES, countyForNews } from '../Components/news/bushehrMap';
+import { COUNTIES, countyForNews } from '../Components/news/bushehr-counties';
 
 export default function Regions({ news = [] }) {
     const counts = useMemo(() => {

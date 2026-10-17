@@ -59,6 +59,12 @@ Route::get('/news/{slug}', function ($slug) {
 })->name('news.show');
 
 // ---------------------------------------------------------------- دسته‌بندی‌ها
+Route::get('/category/bushahr/cities', function () {
+    return Inertia\Inertia::render('CityMap', [
+        'news' => \App\Support\CityNews::all(),
+    ]);
+})->name('cities.map');
+
 Route::get('/category/{slug}/{subSlug?}', function ($slug, $subSlug = null) {
     $category = DB::table('categories')->where('slug', $slug)->first();
 
@@ -188,6 +194,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/newspapers/sources/{id}', [$m, 'destroyNewspaperSource'])->name('admin.newspapers.sources.destroy');
     Route::delete('/newspapers/issues/{id}', [$m, 'destroyNewspaperIssue'])->name('admin.newspapers.issues.destroy');
 
+    // ─────────────────────────── کرون (هاست اشتراکی)
+
+
     // ─────────────────────────── RSS
     Route::get('/rss-sources', [$m, 'rssSources'])->name('admin.rss-sources');
     Route::post('/rss/fetch', [$m, 'fetchRss'])->name('admin.rss.fetch');
@@ -204,6 +213,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // ─────────────────────────── راهنما
     Route::get('/help', [$m, 'help'])->name('admin.help');
+    Route::get('/cron', function () {
+        return Inertia\Inertia::render('Admin/Cron', [
+            'token'   => \App\Support\CronToken::get(),
+            'health'  => \App\Support\ServerHealth::run(),
+            'lastRun' => json_decode((string) \App\Support\SettingStore::get('cron.last_run'), true),
+        ]);
+    })->name('admin.cron');
     Route::get('/change-password', fn () => Inertia\Inertia::render('Admin/ChangePassword'))->name('admin.change-password');
     Route::put('/change-password', [\App\Http\Controllers\Admin\AccountController::class, 'updatePassword'])
         ->defaults('group', 'password')
@@ -418,12 +434,13 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
     ]);
 })->name('search');
 
-Route::get('/regions', function () {
-    return Inertia\Inertia::render('Regions', [
-        'news'  => \App\Support\RegionNews::countyNews(),
-        'stats' => ['counts' => \App\Support\RegionNews::counts()],
+Route::get('/category/bushahr/cities', function () {
+    return Inertia\Inertia::render('CityMap', [
+        'news' => \App\Support\CityNews::all(),
     ]);
-})->name('regions');
+})->name('cities.map');
+
+Route::get('/regions', fn () => redirect()->route('cities.map'));
 
 Route::get('/gallery', function () {
     return Inertia\Inertia::render('Gallery', [
@@ -462,3 +479,9 @@ Route::get('/static/{slug}', function ($slug) {
         ],
     ]);
 })->name('static.show');
+
+// ── کرون (هاست اشتراکی) ──
+$c = \App\Http\Controllers\CronController::class;
+Route::get('/_cron/rss', [$c, 'rss'])->name('cron.rss');
+Route::get('/_cron/backup', [$c, 'backup'])->name('cron.backup');
+Route::get('/_cron/health', [$c, 'health'])->name('cron.health');

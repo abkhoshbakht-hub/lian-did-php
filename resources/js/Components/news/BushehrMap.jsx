@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { COUNTIES, nearestCounty, matchesCounty, isBushehrNews } from './bushehrMap';
+import { COUNTIES, nearestCounty, matchesCounty, isBushehrNews } from './bushehr-counties';
 // styles live in resources/css/app.css so Tailwind ships them
 
 const timeAgo = (dateString) => {

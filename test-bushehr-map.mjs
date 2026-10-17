@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import {
     COUNTIES, BUSHEHR_KEYS, nearestCounty, isBushehrNews, matchesCounty, countyForNews,
-} from './resources/js/Components/news/bushehrMap.js';
+} from './resources/js/Components/news/bushehr-counties.js';
 
 let fail = 0;
 const check = (name, ok) => {

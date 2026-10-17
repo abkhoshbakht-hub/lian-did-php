@@ -453,9 +453,16 @@ class RssFetcher
     {
         $cut = now()->subDays($days);
 
+        // Imported rows can have a NULL created_at, so fall back to the arrival
+        // timestamp, which is always populated.
         $ids = DB::table('external_news')
             ->where('status', 'PENDING')
-            ->where('created_at', '<', $cut)
+            ->where(function ($w) use ($cut) {
+                $w->where('created_at', '<', $cut)
+                  ->orWhere(function ($w2) use ($cut) {
+                      $w2->whereNull('created_at')->where('fetchedAt', '<', $cut);
+                  });
+            })
             ->limit(2000)
             ->pluck('id');
 
