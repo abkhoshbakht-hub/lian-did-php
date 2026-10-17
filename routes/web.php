@@ -205,6 +205,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // ─────────────────────────── راهنما
     Route::get('/help', [$m, 'help'])->name('admin.help');
     Route::get('/change-password', fn () => Inertia\Inertia::render('Admin/ChangePassword'))->name('admin.change-password');
+    Route::put('/change-password', [\App\Http\Controllers\Admin\AccountController::class, 'updatePassword'])
+        ->defaults('group', 'password')
+        ->name('admin.change-password.update');
 
     // ─────────────────────────── عملیات فهرست‌ها
     Route::post('/categories', [$m, 'storeCategory'])->name('admin.categories.store');
@@ -414,6 +417,13 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
         'q'          => $q,
     ]);
 })->name('search');
+
+Route::get('/regions', function () {
+    return Inertia\Inertia::render('Regions', [
+        'news'  => \App\Support\RegionNews::countyNews(),
+        'stats' => ['counts' => \App\Support\RegionNews::counts()],
+    ]);
+})->name('regions');
 
 Route::get('/gallery', function () {
     return Inertia\Inertia::render('Gallery', [

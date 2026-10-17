@@ -24,11 +24,17 @@ export default function AdminChangePassword() {
         });
         const data = await res.json().catch(() => ({}));
 
-        if (res.ok && !data.message) {
-            setMsg({ ok: 'رمز عبور با موفقیت تغییر کرد.' });
+        if (res.ok) {
+            setMsg({ ok: data.message || 'رمز عبور با موفقیت تغییر کرد.' });
             setForm({ current: '', password: '', confirmation: '' });
         } else {
-            setMsg({ err: data.errors?.password?.[0] || 'تغییر رمز ناموفق بود.' });
+            setMsg({
+                err:
+                    data.errors?.password?.[0] ||
+                    data.errors?.current?.[0] ||
+                    data.message ||
+                    'تغییر رمز ناموفق بود.',
+            });
         }
     };
 

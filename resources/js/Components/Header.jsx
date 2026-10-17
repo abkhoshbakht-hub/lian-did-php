@@ -86,6 +86,14 @@ const categories = [
     { name: 'عکس', slug: 'photos', href: '/gallery' },
     { name: 'فیلم', slug: 'videos', href: '/gallery/videos' },
   ]},
+  {
+    name: 'مناطق',
+    slug: 'regions',
+    href: '/regions',
+    subcategories: [
+      { name: 'نقشهٔ شهرستان‌های بوشهر', slug: 'map', href: '/regions' },
+    ],
+  },
 ];
 
 export default function Header({ breakingItems = [] }) {
