@@ -66,10 +66,26 @@ class NewspaperCatalog
                 'persianDate' => $i->persianDate,
                 'issueNumber' => $i->issueNumber,
                 'title'       => $i->title,
-                'image'       => $i->thumbnailUrl ?: $i->imageUrl,
+                'image'       => self::publicUrl($i->thumbnailUrl ?: $i->imageUrl),
                 'originalUrl' => $i->originalUrl,
             ])
             ->all();
+    }
+
+    /**
+     * Stored paths are relative to the public disk; legacy rows may hold an
+     * absolute URL. Only local paths get turned into a /storage URL.
+ */
+private static function publicUrl(?string $path): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+        if (preg_match('~^(https?:)?//~i', $path)) {
+            return $path;
+        }
+
+        return '/storage/'.ltrim($path, '/');
     }
 
     public static function latestIssues(int $limit = 24): array
@@ -92,7 +108,7 @@ class NewspaperCatalog
                 'persianDate' => $i->persianDate,
                 'issueNumber' => $i->issueNumber,
                 'title'       => $i->title,
-                'image'       => $i->thumbnailUrl ?: $i->imageUrl,
+                'image'       => self::publicUrl($i->thumbnailUrl ?: $i->imageUrl),
                 'link'        => '/newspapers/'.$i->paperSlug,
             ])
             ->all();

@@ -28,10 +28,19 @@ function Panel({ title, children, note }) {
     );
 }
 
-export default function AdminNewspapers({ newspapers = [], sources = [], issues = [], logs = [], stats = {} }) {
+export default function AdminNewspapers({ newspapers = [], sources = [], issues = [], logs = [], stats = {}, lastFetch = null }) {
     const [tab, setTab] = useState('papers');
     const paper = useForm({ name: '', slug: '', category: '', website: '', telegram: '', description: '', displayOrder: '' });
     const source = useForm({ newspaperId: '', name: '', type: 'official', url: '', priority: 0 });
+    const fetchForm = useForm({ sources: 6, paper: '' });
+
+    const runFetch = () => {
+        if (fetchForm.processing) return;
+        fetchForm.post('/admin/newspapers/fetch', {
+            preserveScroll: true,
+            onSuccess: () => fetchForm.reset(),
+        });
+    };
 
     const TABS = [
         ['papers', 'روزنامه‌ها', stats.papers],
@@ -53,6 +62,43 @@ export default function AdminNewspapers({ newspapers = [], sources = [], issues 
                     </div>
                 ))}
             </div>
+
+            <div className="flex gap-2 mb-5">
+                <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={fetchForm.data.sources}
+                    onChange={(e) => fetchForm.setData('sources', e.target.value)}
+                    className="w-24 px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm outline-none focus:border-[#1B365D]"
+                    title="تعداد منابع برای بررسی"
+                />
+                <select
+                    value={fetchForm.data.paper}
+                    onChange={(e) => fetchForm.setData('paper', e.target.value)}
+                    className="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm outline-none focus:border-[#1B365D]"
+                >
+                    <option value="">همهٔ روزنامه‌ها</option>
+                    {newspapers.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+                <button
+                    type="button"
+                    onClick={runFetch}
+                    disabled={fetchForm.processing}
+                    className="px-6 py-2.5 rounded-xl bg-[#1B365D] text-white text-sm font-bold hover:bg-[#2a4a7a] transition-colors disabled:opacity-50"
+                >
+                    {fetchForm.processing ? 'در حال دریافت...' : 'دریافت صفحهٔ اول'}
+                </button>
+            </div>
+
+            {lastFetch && (
+                <p className="mb-4 text-xs text-gray-500">
+                    آخرین دریافت: {lastFetch.at} — {lastFetch.ok} موفق، {lastFetch.failed} ناموفق
+                    {lastFetch.elapsed ? ` (${lastFetch.elapsed}s)` : ''}
+                </p>
+            )}
 
             <div className="flex gap-2 mb-5">
                 {TABS.map(([k, l, n]) => (

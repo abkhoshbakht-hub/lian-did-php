@@ -701,6 +701,7 @@ class ManageController
             'pending' => DB::table('external_news')->where('status', 'PENDING')->count(),
             'approved' => DB::table('external_news')->where('status', 'APPROVED')->count(),
             'lastResult' => json_decode((string) \App\Support\SettingStore::get('rss.last_result'), true),
+            'lastFetch' => json_decode((string) \App\Support\SettingStore::get('newspapers.last_fetch'), true),
         ]);
     }
 
@@ -713,6 +714,35 @@ class ManageController
     }
 
     // ================================================================ روزنامه‌ها
+    /** Discovers and stores today's front-page images. */
+    public function fetchNewspaperFronts(Request $request)
+    {
+        $max = max(1, min(30, (int) $request->input('sources', 5)));
+        $paper = $request->input('paper') ?: null;
+
+        $t0 = microtime(true);
+        $result = \App\Support\NewspaperFetcher::run($max, $paper);
+        $elapsed = round(microtime(true) - $t0, 1);
+
+        $detail = collect($result['details'])->map(function ($d) {
+            return ($d['ok'] ? '✓ ' : '✗ ').$d['source'].($d['ok'] ? '' : ' — '.$d['error']);
+        })->implode("\n");
+
+        \App\Support\SettingStore::set('newspapers.last_fetch', json_encode([
+            'at'      => now()->toDateTimeString(),
+            'ok'      => $result['ok'],
+            'failed'  => $result['failed'],
+            'elapsed' => $elapsed,
+            'details' => $result['details'],
+        ], JSON_UNESCAPED_UNICODE));
+
+        if ($result['ok'] > 0) {
+            return back()->with('success', "در {$elapsed} ثانیه — {$result['ok']} صفحهٔ اول ذخیره شد، {$result['failed']} ناموفق.\n".$detail);
+        }
+
+        return back()->with('error', "هیچ صفحهٔ اولی پیدا نشد ({$result['failed']} منبع بررسی شد).\n".$detail);
+    }
+
     public function newspapers(): Response
     {
         $issueCounts = DB::table('newspaper_issues')
@@ -742,6 +772,7 @@ class ManageController
                 'issues'  => DB::table('newspaper_issues')->count(),
                 'noImage' => DB::table('newspaper_issues')->whereNull('imageUrl')->orWhere('imageUrl', '')->count(),
             ],
+            'lastFetch' => json_decode((string) \App\Support\SettingStore::get('newspapers.last_fetch'), true),
         ]);
     }
 

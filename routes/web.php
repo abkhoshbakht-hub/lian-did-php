@@ -175,6 +175,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // ─────────────────────────── روزنامه‌ها
     Route::get('/newspapers', [$m, 'newspapers'])->name('admin.newspapers');
+    Route::post('/newspapers/fetch', [$m, 'fetchNewspaperFronts'])->name('admin.newspapers.fetch');
     Route::post('/newspapers', [$m, 'storeNewspaper'])->name('admin.newspapers.store');
     Route::put('/newspapers/{id}', [$m, 'updateNewspaper'])->name('admin.newspapers.update');
     Route::delete('/newspapers/{id}', [$m, 'destroyNewspaper'])->name('admin.newspapers.destroy');
