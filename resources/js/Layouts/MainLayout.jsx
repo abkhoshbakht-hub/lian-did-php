@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import Header from '../Components/Header';
 import Footer from '../Components/Footer';
 
-export default function MainLayout({ children, title = 'پایگاه خبری تحلیلی استان بوشهر', ogImage = '/og-image.png' }) {
+export default function MainLayout({ children, breakingItems = [], title = 'پایگاه خبری تحلیلی استان بوشهر', ogImage = '/og-image.png' }) {
     return (
         <div className="min-h-screen flex flex-col bg-[#ffffff] text-[#1a1a1a]">
             <Head>
@@ -13,9 +13,9 @@ export default function MainLayout({ children, title = 'پایگاه خبری ت
                 <meta head-key="twitter:card" name="twitter:card" content="summary_large_image" />
             </Head>
 
-            <Header />
-            
-            <main className="flex-grow site-container mt-8">
+            <Header breakingItems={breakingItems} />
+
+            <main className="flex-grow">
                 {children}
             </main>
 

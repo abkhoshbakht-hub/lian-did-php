@@ -62,18 +62,28 @@ export default function AdminBackup({ stats = {}, telegram = {}, lastBackup = nu
     };
 
     const saveTg = async () => {
-        const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]) || '');
-        const res = await fetch('/admin/backup/telegram', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-XSRF-TOKEN': xsrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: new URLSearchParams({ _method: 'POST', token, chat, intent: 'save' }),
-        });
-        const data = await res.json().catch(() => ({}));
-        alert(data.props?.flash?.success || data.props?.flash?.error || 'ذخیره شد.');
+        setBusy(true);
+        try {
+            const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]) || '');
+            const res = await fetch('/admin/backup/telegram/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-XSRF-TOKEN': xsrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new URLSearchParams({ token, chat }),
+            });
+            const data = await res.json().catch(() => ({}));
+            const msg = data.props?.flash?.success || data.props?.flash?.error;
+            if (msg) {
+                alert(msg);
+            } else if (!res.ok) {
+                alert('ذخیره تنظیمات ناموفق بود.');
+            }
+        } finally {
+            setBusy(false);
+        }
     };
 
     const box = 'w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:bg-white focus:border-[#1B365D]';

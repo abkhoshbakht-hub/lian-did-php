@@ -93,34 +93,112 @@ class DatabaseBackup
             return ['ok' => false, 'error' => 'توکن یا شناسه چت تلگرام تنظیم نشده است.'];
         }
 
-        $tmp = tempnam(sys_get_temp_dir(), 'bk');
-        $fh = fopen($tmp, 'wb');
-        $this->writeTo($fh);
-        fclose($fh);
+        // Stream the dump straight from the generator into the request body.
+        // Nothing is written to disk on the hosting account.
+        $result = $this->postMultipartStream(
+            "https://api.telegram.org/bot{$token}/sendDocument",
+            ['chat_id' => $chatId, 'caption' => 'پشتیبان‌گیری لیان دید — ' . date('Y/m/d H:i')],
+            $filename
+        );
 
-        $ch = curl_init("https://api.telegram.org/bot{$token}/sendDocument");
+        if (! $result['ok']) return $result;
+
+        return ['ok' => true, 'error' => null];
+    }
+
+    /**
+     * POSTs a multipart/form-data request whose document part is streamed
+     * straight from the dump generator. No file is ever written to disk.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function postMultipartStream(string $url, array $fields, string $filename): array
+    {
+        $buffer = fopen('php://temp', 'w+b');
+        $this->writeTo($buffer);
+        rewind($buffer);
+        $size = fstat($buffer)['size'];
+
+        $boundary = '----LiandidBackup'.bin2hex(random_bytes(8));
+
+        // Build the multipart head; the file part becomes a READFUNCTION stream.
+        $head = '';
+        foreach ($fields as $name => $value) {
+            $head .= "--{$boundary}\r\n"
+                ."Content-Disposition: form-data; name=\"{$name}\"\r\n\r\n"
+                ."{$value}\r\n";
+        }
+        $head .= "--{$boundary}\r\n"
+            ."Content-Disposition: form-data; name=\"document\"; filename=\"{$filename}\"\r\n"
+            ."Content-Type: application/sql\r\n\r\n";
+        $headLen = strlen($head);
+        $tail = "\r\n--{$boundary}--\r\n";
+        $tailLen = strlen($tail);
+
+        $state = ['sent' => 0];
+
+        $read = function ($conn, ...$rest) use ($buffer, $head, $headLen, $tail, $tailLen, $size, &$state) {
+            // In upload mode curl calls this as ($conn, $fd, $length)
+            $chunkSize = (int) end($rest);
+
+            if ($state['sent'] < $headLen) {
+                $chunk = substr($head, $state['sent'], $chunkSize ?: null);
+                $state['sent'] += strlen($chunk);
+
+                return $chunk;
+            }
+
+            $remaining = $size - ($state['sent'] - $headLen);
+            if ($remaining > 0) {
+                $chunk = fread($buffer, (int) min($chunkSize ?: $remaining, $remaining));
+                $state['sent'] += strlen($chunk);
+
+                return $chunk;
+            }
+
+            if ($state['sent'] < $headLen + $size + $tailLen) {
+                $offset = $state['sent'] - $headLen - $size;
+                $chunk = substr($tail, $offset);
+                $state['sent'] = $headLen + $size + $tailLen;
+
+                return $chunk;
+            }
+
+            return '';
+        };
+
+        $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_TIMEOUT => 300,
-            CURLOPT_POSTFIELDS => [
-                'chat_id' => $chatId,
-                'document' => new \CURLFile($tmp, 'application/sql', $filename),
-                'caption' => 'پشتیبان‌گیری لیان دید — ' . date('Y/m/d H:i'),
+            // PHP's curl only feeds CURLOPT_READFUNCTION in upload mode, so the
+            // whole multipart body is streamed by us with chunked encoding.
+            // CURLOPT_POSTFIELDS must stay unset - it cancels the read function.
+            CURLOPT_UPLOAD         => true,
+            CURLOPT_INFILE         => fopen('php://temp', 'r+b'),
+            CURLOPT_INFILESIZE     => -1,
+            CURLOPT_POST           => true,
+            CURLOPT_TIMEOUT        => 900,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: multipart/form-data; boundary='.$boundary,
+                'Expect:',
             ],
+            CURLOPT_READFUNCTION   => $read,
         ]);
+
         $res = curl_exec($ch);
         $err = curl_error($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-
-        // always remove the temp file, even on failure
-        @unlink($tmp);
+        fclose($buffer);
 
         if ($err) return ['ok' => false, 'error' => $err];
-        if ($code !== 200) return ['ok' => false, 'error' => "HTTP $code"];
+        if ($code < 200 || $code >= 300) {
+            $msg = json_decode((string) $res, true)['description'] ?? "HTTP $code";
 
-        return ['ok' => true, 'error' => null];
+            return ['ok' => false, 'error' => $msg];
+        }
+
+        return ['ok' => true, 'error' => null, 'body' => $res];
     }
 
     /** Primary key column(s) for a table; empty when there is none. */

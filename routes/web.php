@@ -9,6 +9,8 @@ require __DIR__.'/auth.php';
 
 // ---------------------------------------------------------------- صفحه اصلی
 Route::get('/', function () {
+    $home = \App\Support\HomepageResolver::resolve();
+
     $articles = ArticleFormatter::collection(
         DB::table('articles')
             ->where('status', 'PUBLISHED')
@@ -21,6 +23,7 @@ Route::get('/', function () {
     return Inertia\Inertia::render('Home', [
         'articles'   => $articles,
         'categories' => $categories,
+        'home'       => $home,
     ]);
 })->name('home');
 

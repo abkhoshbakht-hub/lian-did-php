@@ -88,30 +88,23 @@ const categories = [
   ]},
 ];
 
-const breakingNews = [
-  'واکنش وزیر خارجه به آخرین تحولات مذاکرات هسته‌ای',
-  'قیمت دلار و سکه در بازار امروز',
-  'نتایج نهایی مسابقات ورزشی کشور',
-  'هشدار هواشناسی نسبت به ورود سامانه بارشی جدید',
-];
-
 export default function Header({ breakingItems = [] }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   
-  const [currentNews, setCurrentNews] = useState(0);
+  const [pulse, setPulse] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [settings, setSettings] = useState({});
+
+  const breaking = Array.isArray(breakingItems) ? breakingItems : [];
 
   useEffect(() => {
     fetch('/api/admin/settings').then(r => r.json()).then(setSettings).catch(() => {});
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentNews((prev) => (prev + 1) % breakingNews.length);
-    }, 4000);
-    return () => clearInterval(interval);
+    const t = setInterval(() => setPulse((p) => !p), 1500);
+    return () => clearInterval(t);
   }, []);
 
   return (
@@ -156,6 +149,42 @@ export default function Header({ breakingItems = [] }) {
           </div>
         </div>
       </div>
+
+      {/* نوار خبر فوری */}
+      {breaking.length > 0 && (
+        <div className="bg-[#16294a] border-t border-white/5">
+          <div className="site-container flex items-center h-10">
+            <div className="flex items-center shrink-0 z-10 pl-3">
+              <span className="inline-flex items-center gap-1.5 bg-red-600 text-white text-[10px] px-2.5 py-1 rounded font-black shadow-lg shadow-red-600/30">
+                <span className={`w-1.5 h-1.5 rounded-full bg-white ${pulse ? 'animate-pulse' : 'opacity-50'}`} />
+                فوری
+              </span>
+            </div>
+            <div className="w-px h-6 bg-white/10 shrink-0 hidden md:block" />
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="flex items-center whitespace-nowrap animate-marquee">
+                {[0, 1, 2].map((copy) => (
+                  <div key={copy} className="flex items-center shrink-0">
+                    {breaking.map((news, i) => (
+                      <a
+                        key={`br-${copy}-${news.id}-${i}`}
+                        href={news.link || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-300 hover:text-white transition-colors font-bold text-xs flex items-center gap-2"
+                      >
+                        <span className="text-[#C9A96E]">◆</span>
+                        <span className="mx-1">{news.title}</span>
+                        <span className="text-[#C9A96E]">◆</span>
+                      </a>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* نوار منو */}
       <nav className="hidden lg:block bg-gradient-to-l from-[#1B365D] via-[#1e3a64] to-[#1B365D] shadow-md">
