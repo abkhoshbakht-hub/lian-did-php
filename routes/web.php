@@ -105,6 +105,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/image-settings', [$s, 'imageSettings'])->name('admin.image-settings');
     Route::post('/image-settings', [$s, 'saveImageSettings'])->name('admin.image-settings.save');
     Route::post('/upload', [\App\Http\Controllers\Admin\MediaController::class, 'upload'])->name('admin.upload');
+    Route::post('/gallery/albums', [\App\Http\Controllers\Admin\GalleryController::class, 'storeAlbum'])->name('admin.gallery.albums.store');
+    Route::put('/gallery/albums/{id}', [\App\Http\Controllers\Admin\GalleryController::class, 'updateAlbum'])->name('admin.gallery.albums.update');
+    Route::delete('/gallery/albums/{id}', [\App\Http\Controllers\Admin\GalleryController::class, 'destroyAlbum'])->name('admin.gallery.albums.destroy');
+    Route::post('/gallery/albums/{id}/items', [\App\Http\Controllers\Admin\GalleryController::class, 'storeItem'])->name('admin.gallery.items.store');
+    Route::delete('/gallery/items/{id}', [\App\Http\Controllers\Admin\GalleryController::class, 'destroyItem'])->name('admin.gallery.items.destroy');
 
     // تنظیمات متنی (هر گروه یک جفت مسیر)
     Route::get('/settings/logo', [$s, 'settingsPage'])->defaults('group', 'logo')->name('admin.settings.logo');
@@ -161,7 +166,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/submissions/{id}', [$m, 'destroySubmission'])->name('admin.submissions.destroy');
 
     // ─────────────────────────── گالری
-    Route::get('/gallery', [$m, 'gallery'])->name('admin.gallery');
+    Route::get('/gallery', [\App\Http\Controllers\Admin\GalleryController::class, 'index'])->name('admin.gallery');
     Route::post('/gallery/delete', [$m, 'destroyGalleryImage'])->name('admin.gallery.delete');
 
     // ─────────────────────────── لینک کوتاه
@@ -411,18 +416,27 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
 })->name('search');
 
 Route::get('/gallery', function () {
-    $images = DB::table('articles')
-        ->where('status', 'PUBLISHED')
-        ->whereNotNull('featuredImage')
-        ->where('featuredImage', '<>', '')
-        ->orderByDesc('publishedAt')
-        ->limit(60)
-        ->get(['id', 'title', 'featuredImage'])
-        ->map(fn ($a) => ['id' => $a->id, 'title' => $a->title, 'src' => $a->featuredImage])
-        ->values();
-
-    return Inertia\Inertia::render('Gallery', ['images' => $images, 'videos' => []]);
+    return Inertia\Inertia::render('Gallery', [
+        'albums' => \App\Support\GalleryCatalog::albums(),
+    ]);
 })->name('gallery');
+
+Route::get('/gallery/videos', function () {
+    return Inertia\Inertia::render('GalleryVideos', [
+        'videos' => \App\Support\GalleryCatalog::videos(),
+    ]);
+})->name('gallery.videos');
+
+Route::get('/gallery/{slug}', function ($slug) {
+    $album = \App\Support\GalleryCatalog::album($slug);
+
+    abort_if(! $album, 404, 'آلبوم مورد نظر پیدا نشد.');
+
+    return Inertia\Inertia::render('GalleryAlbum', [
+        'album' => $album,
+        'items' => \App\Support\GalleryCatalog::items($album['id']),
+    ]);
+})->name('gallery.album');
 
 Route::get('/static/{slug}', function ($slug) {
     $page = DB::table('static_pages')->where('slug', $slug)->first();
