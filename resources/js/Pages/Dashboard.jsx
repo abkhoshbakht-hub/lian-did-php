@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import MainLayout '@/Layouts/MainLayout';
+import MainLayout from '@/Layouts/MainLayout';
 
 export default function AdminDashboard({ articles = [], categories = [], stats = {} }) {
     const [title, setTitle] = useState('');

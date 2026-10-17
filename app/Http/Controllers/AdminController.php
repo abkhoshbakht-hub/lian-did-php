@@ -3,45 +3,133 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class AdminController extends Controller
 {
-    // داشبورد اصلی ادمین با آمار کامل و مدیریت محتوا
-    public function dashboard()
+    /** Columns that exist on the articles table, whichever naming convention is in use. */
+    private function articleColumns(): array
     {
-        $articles = DB::table('articles')->orderBy('id', 'desc')->get()->map(function ($item) {
-            $arr = (array) $item;
-            $catId = $arr['categoryId'] ?? $arr['category_id'] ?? null;
-            $category = $catId ? DB::table('categories')->where('id', $catId)->first() : null;
-            
+        return Schema::getColumnListing('articles');
+    }
+
+    /**
+     * Build a URL-safe slug that keeps Persian letters (Str::slug strips them).
+     */
+    private function makeSlug(string $title, ?string $ignoreId = null): string
+    {
+        $slug = preg_replace('/[^\p{L}\p{N}]+/u', '-', $title) ?? '';
+        $slug = trim($slug, '-');
+        if ($slug === '') {
+            $slug = 'news';
+        }
+        $slug = mb_substr($slug, 0, 200);
+
+        $base = $slug;
+        $i = 1;
+        while (true) {
+            $exists = DB::table('articles')
+                ->where('slug', $slug)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists();
+            if (! $exists) break;
+            $slug = $base . '-' . (++$i);
+        }
+
+        return $slug;
+    }
+
+    /** CUID-like 25 character id, matching the ids imported from the Next.js version. */
+    private function newId(array $columns): string
+    {
+        $id = 'cmt' . substr(str_replace('-', '', Str::uuid()->toString()), 0, 22);
+        while (DB::table('articles')->where('id', $id)->exists()) {
+            $id = 'cmt' . substr(str_replace('-', '', Str::uuid()->toString()), 0, 22);
+        }
+        return $id;
+    }
+
+    private function payload(Request $request, array $columns): array
+    {
+        $data = [
+            'title'         => $request->input('title'),
+            'subtitle'      => $request->input('subtitle'),
+            'excerpt'       => $request->input('excerpt', ''),
+            'content'       => $request->input('content'),
+            'status'        => $request->input('status', 'PUBLISHED'),
+            'featuredImage' => $request->input('featuredImage') ?: null,
+            'source'        => $request->input('source'),
+            'sourceUrl'     => $request->input('sourceUrl'),
+            'metaTitle'     => $request->input('metaTitle'),
+            'metaDesc'      => $request->input('metaDesc'),
+            'metaKeywords'  => $request->input('metaKeywords'),
+            'region'        => $request->input('region'),
+            'placement'     => $request->input('placement', 'latest'),
+            'isFeatured'    => $request->boolean('isFeatured') ? 1 : 0,
+            'isBreaking'    => $request->boolean('isBreaking') ? 1 : 0,
+            'isPinned'      => $request->boolean('isPinned') ? 1 : 0,
+        ];
+
+        if (in_array('viewCount', $columns, true))  $data['viewCount'] = 0;
+        if (in_array('view_count', $columns, true)) $data['view_count'] = 0;
+
+        if (in_array('categoryId', $columns, true))  $data['categoryId'] = $request->input('categoryId');
+        if (in_array('category_id', $columns, true)) $data['category_id'] = $request->input('categoryId');
+
+        if (in_array('publishedAt', $columns, true)) {
+            $data['publishedAt'] = $request->input('publishedAt') ?: now();
+        }
+        if (in_array('published_at', $columns, true)) {
+            $data['published_at'] = $request->input('publishedAt') ?: now();
+        }
+
+        return array_filter($data, fn ($v, $k) => in_array($k, $columns, true), ARRAY_FILTER_USE_BOTH);
+    }
+
+    // ------------------------------------------------------------------ داشبورد
+    public function dashboard(): Response
+    {
+        $columns = $this->articleColumns();
+
+        $articles = DB::table('articles')->orderByDesc('created_at')->get()->map(function ($item) {
+            $catId = $item->categoryId ?? null;
+            $category = $catId
+                ? DB::table('categories')->where('id', $catId)->first()
+                : null;
+
             return [
-                'id'            => (string) $arr['id'],
-                'title'         => $arr['title'],
-                'slug'          => $arr['slug'],
-                'status'        => $arr['status'] ?? 'PUBLISHED',
-                'viewCount'     => (int) ($arr['viewCount'] ?? $arr['view_count'] ?? 0),
-                'isBreaking'    => (bool) ($arr['isBreaking'] ?? $arr['is_breaking'] ?? false),
-                'isFeatured'    => (bool) ($arr['isFeatured'] ?? $arr['is_featured'] ?? false),
-                'categoryName'  => $category ? $category->name : 'عمومی',
-                'publishedAt'   => $arr['publishedAt'] ?? $arr['published_at'] ?? now()->toIso8601String(),
+                'id'           => (string) $item->id,
+                'title'        => $item->title,
+                'slug'         => $item->slug,
+                'subtitle'     => $item->subtitle,
+                'excerpt'      => $item->excerpt,
+                'content'      => $item->content,
+                'featuredImage' => $item->featuredImage,
+                'status'       => $item->status,
+                'viewCount'    => (int) $item->viewCount,
+                'isBreaking'   => (bool) $item->isBreaking,
+                'isFeatured'   => (bool) $item->isFeatured,
+                'isPinned'     => (bool) $item->isPinned,
+                'categoryId'   => $catId,
+                'categoryName' => $category?->name ?? 'عمومی',
+                'publishedAt'  => $item->publishedAt,
             ];
         })->values();
 
         $categories = DB::table('categories')->orderBy('order')->get();
-        
-        $columns = Schema::getColumnListing('articles');
-        $viewCol = in_array('viewCount', $columns) ? 'viewCount' : (in_array('view_count', $columns) ? 'view_count' : null);
-        $totalViews = $viewCol ? DB::table('articles')->sum($viewCol) : 0;
 
         $stats = [
-            'totalArticles' => DB::table('articles')->count(),
-            'totalViews'    => $totalViews,
+            'totalArticles'   => DB::table('articles')->count(),
+            'totalViews'      => DB::table('articles')->sum('viewCount'),
             'totalCategories' => $categories->count(),
-            'totalUsers'    => Schema::hasTable('users') ? DB::table('users')->count() : 1,
+            'totalUsers'      => DB::table('users')->count(),
+            'totalExternal'   => DB::table('external_news')->count(),
+            'totalComments'   => DB::table('comments')->count(),
         ];
 
         return Inertia::render('Admin/Dashboard', [
@@ -51,53 +139,73 @@ class AdminController extends Controller
         ]);
     }
 
-    // ایجاد و انتشار خبر جدید با جزئیات کامل
+    // ------------------------------------------------------------------ ایجاد
     public function storeArticle(Request $request)
     {
         $request->validate([
-            'title'       => 'required|string|max:255',
-            'excerpt'     => 'nullable|string',
-            'content'     => 'required|string',
-            'categoryId'  => 'required',
+            'title'      => 'required|string|max:255',
+            'content'    => 'required|string',
+            'categoryId' => 'required',
+            'excerpt'    => 'nullable|string',
         ]);
 
-        $articleCols = Schema::getColumnListing('articles');
-        $maxId = DB::table('articles')->max('id');
-        $newId = $maxId ? (string) (intval($maxId) + 1) : '1';
+        $columns = $this->articleColumns();
 
-        $data = [
-            'id'            => $newId,
-            'title'         => $request->input('title'),
-            'slug'          => Str::slug($request->input('title')) . '-' . rand(1000, 9999),
-            'subtitle'      => $request->input('subtitle'),
-            'excerpt'       => $request->input('excerpt', ''),
-            'content'       => $request->input('content'),
-            'status'        => $request->input('status', 'PUBLISHED'),
-            'featuredImage' => $request->input('featuredImage', 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80'),
-            'isFeatured'    => $request->boolean('isFeatured'),
-            'isBreaking'    => $request->boolean('isBreaking'),
-            'placement'     => $request->input('placement', 'latest'),
-        ];
+        $data = $this->payload($request, $columns);
+        $data['id']   = $this->newId($columns);
+        $data['slug'] = $this->makeSlug($request->input('title'));
 
-        if (in_array('viewCount', $articleCols)) $data['viewCount'] = 0;
-        if (in_array('view_count', $articleCols)) $data['view_count'] = 0;
+        // authorId is NOT NULL in the schema and must reference an existing user
+        $authorId = $request->user()?->id
+            ?? DB::table('users')->where('role', 'ADMIN')->value('id');
 
-        if (in_array('categoryId', $articleCols)) $data['categoryId'] = $request->input('categoryId');
-        if (in_array('category_id', $articleCols)) $data['category_id'] = $request->input('categoryId');
+        abort_if(! $authorId, 403, 'کاربر جاری معتبر نیست.');
 
-        foreach (['createdAt', 'created_at', 'updatedAt', 'updated_at'] as $tc) {
-            if (in_array($tc, $articleCols)) $data[$tc] = now();
+        if (in_array('authorId', $columns, true))  $data['authorId'] = $authorId;
+        if (in_array('author_id', $columns, true)) $data['author_id'] = $authorId;
+
+        foreach (['created_at', 'updated_at', 'createdAt', 'updatedAt'] as $tc) {
+            if (in_array($tc, $columns, true)) $data[$tc] = now();
         }
 
         DB::table('articles')->insert($data);
 
-        return redirect()->back()->with('success', 'خبر با موفقیت منتشر شد.');
+        return back()->with('success', 'خبر با موفقیت منتشر شد.');
     }
 
-    // حذف خبر
+    // ------------------------------------------------------------------ ویرایش
+    public function updateArticle(Request $request, $id)
+    {
+        $request->validate([
+            'title'      => 'required|string|max:255',
+            'content'    => 'required|string',
+            'categoryId' => 'required',
+        ]);
+
+        $article = DB::table('articles')->where('id', $id)->first();
+        abort_if(! $article, 404, 'خبر مورد نظر یافت نشد.');
+
+        $columns = $this->articleColumns();
+        $data = $this->payload($request, $columns);
+        $data['slug'] = $this->makeSlug($request->input('title'), $id);
+
+        foreach (['updated_at', 'updatedAt'] as $tc) {
+            if (in_array($tc, $columns, true)) $data[$tc] = now();
+        }
+
+        DB::table('articles')->where('id', $id)->update($data);
+
+        return back()->with('success', 'تغییرات خبر ذخیره شد.');
+    }
+
+    // ------------------------------------------------------------------ حذف
     public function destroyArticle($id)
     {
+        $article = DB::table('articles')->where('id', $id)->first();
+        abort_if(! $article, 404, 'خبر مورد نظر یافت نشد.');
+
         DB::table('articles')->where('id', $id)->delete();
-        return redirect()->back()->with('success', 'خبر با موفقیت حذف گردید.');
+
+        return back()->with('success', 'خبر با موفقیت حذف گردید.');
     }
 }

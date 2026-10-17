@@ -14,14 +14,29 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * ids are CUID-like strings, not auto-increment integers.
+     * Without this Laravel casts the primary key to int and every string id becomes 0.
+     */
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
+        'id',
         'name',
         'email',
         'password',
+        'role',
+        'permissions',
+        'avatar',
+        'bio',
+        'phone',
+        'isActive',
     ];
 
     /**
@@ -44,6 +59,15 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'isActive' => 'boolean',
         ];
+    }
+
+    /**
+     * Whether the user may access the admin panel.
+     */
+    public function isAdmin(): bool
+    {
+        return strtoupper((string) $this->role) === 'ADMIN';
     }
 }
