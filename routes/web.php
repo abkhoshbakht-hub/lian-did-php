@@ -240,7 +240,199 @@ Route::middleware('auth')->group(function () {
 });
 
 // ---------------------------------------------------------------- صفحات عمومی
-Route::get('/gallery', fn () => Inertia\Inertia::render('Home', ['articles' => [], 'categories' => []]));
-Route::get('/about', fn () => Inertia\Inertia::render('Home', ['articles' => [], 'categories' => []]));
-Route::get('/contact', fn () => Inertia\Inertia::render('Home', ['articles' => [], 'categories' => []]));
-Route::get('/search', fn () => Inertia\Inertia::render('Home', ['articles' => [], 'categories' => []]));
+Route::get('/latest', function () {
+    $articles = \App\Support\ArticleFormatter::collection(
+        DB::table('articles')
+            ->where('status', 'PUBLISHED')
+            ->orderByDesc('publishedAt')
+            ->limit(60)
+            ->get()
+    );
+
+    return Inertia\Inertia::render('Latest', ['articles' => $articles]);
+})->name('latest');
+
+Route::get('/newspapers', function () {
+    return Inertia\Inertia::render('Newspapers', [
+        'papers' => \App\Support\NewspaperCatalog::papers(),
+        'issues' => \App\Support\NewspaperCatalog::latestIssues(),
+    ]);
+})->name('newspapers.index');
+
+Route::get('/newspapers/{slug}', function ($slug) {
+    $paper = \App\Support\NewspaperCatalog::paper($slug);
+
+    abort_if(! $paper, 404, 'روزنامه مورد نظر پیدا نشد.');
+
+    return Inertia\Inertia::render('NewspaperDetail', [
+        'paper'  => $paper,
+        'issues' => $paper['issues'],
+    ]);
+})->name('newspapers.show');
+
+Route::get('/about', function () {
+    return Inertia\Inertia::render('About', [
+        'settings' => \App\Support\SettingStore::all(),
+        'page'     => DB::table('static_pages')->where('slug', 'about')->first(),
+    ]);
+})->name('about');
+
+// The hero slot in the database links here, so it must resolve.
+Route::get('/about/{slug}', function ($slug) {
+    $page = DB::table('static_pages')->where('slug', $slug)->first();
+
+    abort_if(! $page, 404, 'صفحه مورد نظر پیدا نشد.');
+
+    return Inertia\Inertia::render('StaticPage', [
+        'page' => [
+            'title'   => $page->title,
+            'content' => $page->content,
+            'excerpt' => $page->excerpt,
+            'image'   => $page->featuredImage,
+        ],
+    ]);
+})->name('about.slug');
+
+// Legal pages referenced from the footer.
+foreach (['privacy' => 'حریم خصوصی', 'terms' => 'قوانین و مقررات'] as $slug => $fallbackTitle) {
+    Route::get('/'.$slug, function () use ($slug, $fallbackTitle) {
+        $page = DB::table('static_pages')->where('slug', $slug)->first();
+
+        $content = $page->content ?? null;
+
+        if (! $content) {
+            abort(404, 'این صفحه هنوز تکمیل نشده است.');
+        }
+
+        return Inertia\Inertia::render('StaticPage', [
+            'page' => [
+                'title'   => $page->title ?: $fallbackTitle,
+                'content' => $content,
+                'excerpt' => $page->excerpt,
+                'image'   => $page->featuredImage,
+            ],
+        ]);
+    })->name($slug);
+}
+
+// RSS feed for readers - referenced from the footer.
+Route::get('/api/rss/feed', function () {
+    $siteUrl = rtrim((string) config('app.url'), '/');
+    $siteName = 'پایگاه خبری تحلیلی لیان دید';
+    $siteDesc = 'اخبار لحظه‌ای استان بوشهر و ایران';
+
+    $esc = fn ($s) => htmlspecialchars((string) $s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+
+    $articles = DB::table('articles')
+        ->leftJoin('categories', 'articles.categoryId', '=', 'categories.id')
+        ->where('articles.status', 'PUBLISHED')
+        ->orderByDesc('articles.publishedAt')
+        ->limit(50)
+        ->get(['articles.title', 'articles.slug', 'articles.excerpt', 'articles.publishedAt', 'articles.created_at', 'categories.name as categoryName']);
+
+    $items = '';
+    foreach ($articles as $a) {
+        $pub = $a->publishedAt ?: $a->created_at;
+        $link = $siteUrl.'/news/'.$a->slug;
+        $cats = $a->categoryName ? '<category>'.$esc($a->categoryName).'</category>' : '';
+        $items .= "    <item>\n"
+            .'      <title>'.$esc($a->title)."</title>\n"
+            .'      <link>'.$esc($link)."</link>\n"
+            .'      <guid isPermaLink="true">'.$esc($link)."</guid>\n"
+            .($pub ? '      <pubDate>'.date('D, d M Y H:i:s O', strtotime($pub))."</pubDate>\n" : '')
+            .($a->excerpt ? '      <description>'.$esc(strip_tags($a->excerpt))."</description>\n" : '')
+            .($cats ? '      '.$cats."\n" : '')
+            ."    </item>\n";
+    }
+
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n"
+        .'<rss version="2.0">'."\n"
+        .'  <channel>'."\n"
+        .'    <title>'.$esc($siteName)."</title>\n"
+        .'    <link>'.$esc($siteUrl)."</link>\n"
+        .'    <description>'.$esc($siteDesc)."</description>\n"
+        .'    <language>fa</language>'."\n"
+        .$items
+        ."  </channel>\n"
+        .'</rss>';
+
+    return response($xml, 200, [
+        'Content-Type' => 'application/rss+xml; charset=UTF-8',
+        'Cache-Control' => 'public, max-age=600',
+    ]);
+})->name('rss.feed');
+
+Route::get('/contact', function () {
+    return Inertia\Inertia::render('Contact', [
+        'settings' => \App\Support\SettingStore::all(),
+    ]);
+})->name('contact');
+
+Route::post('/contact', function (Illuminate\Http\Request $request) {
+    $v = $request->validate([
+        'name'    => 'required|string|max:120',
+        'email'   => 'required|email|max:180',
+        'phone'   => 'nullable|string|max:40',
+        'subject' => 'nullable|string|max:180',
+        'message' => 'required|string|max:4000',
+    ]);
+
+    \App\Support\SettingStore::set('contact.last_message', json_encode([
+        'at'      => now()->toIso8601String(),
+        'data'    => $v,
+    ], JSON_UNESCAPED_UNICODE));
+
+    return back()->with('success', 'پیام شما دریافت شد.');
+})->name('contact.submit');
+
+Route::get('/search', function (Illuminate\Http\Request $request) {
+    $q = trim((string) $request->query('q', ''));
+
+    $articles = $q === '' ? [] : ArticleFormatter::collection(
+        DB::table('articles')
+            ->where('status', 'PUBLISHED')
+            ->where(function ($w) use ($q) {
+                $w->where('title', 'like', "%{$q}%")
+                  ->orWhere('excerpt', 'like', "%{$q}%")
+                  ->orWhere('content', 'like', "%{$q}%");
+            })
+            ->orderByDesc('publishedAt')
+            ->limit(50)
+            ->get()
+    );
+
+    return Inertia\Inertia::render('Search', [
+        'articles'   => $articles,
+        'categories' => DB::table('categories')->orderBy('order')->get(),
+        'q'          => $q,
+    ]);
+})->name('search');
+
+Route::get('/gallery', function () {
+    $images = DB::table('articles')
+        ->where('status', 'PUBLISHED')
+        ->whereNotNull('featuredImage')
+        ->where('featuredImage', '<>', '')
+        ->orderByDesc('publishedAt')
+        ->limit(60)
+        ->get(['id', 'title', 'featuredImage'])
+        ->map(fn ($a) => ['id' => $a->id, 'title' => $a->title, 'src' => $a->featuredImage])
+        ->values();
+
+    return Inertia\Inertia::render('Gallery', ['images' => $images, 'videos' => []]);
+})->name('gallery');
+
+Route::get('/static/{slug}', function ($slug) {
+    $page = DB::table('static_pages')->where('slug', $slug)->first();
+
+    abort_if(! $page, 404, 'صفحه مورد نظر پیدا نشد.');
+
+    return Inertia\Inertia::render('StaticPage', [
+        'page' => [
+            'title'   => $page->title,
+            'content' => $page->content,
+            'excerpt' => $page->excerpt,
+            'image'   => $page->featuredImage,
+        ],
+    ]);
+})->name('static.show');
