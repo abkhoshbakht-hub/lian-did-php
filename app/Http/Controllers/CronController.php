@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\CronToken;
 use App\Support\DatabaseBackup;
+use App\Support\NewspaperRetention;
 use App\Support\RssFetcher;
 use App\Support\ServerHealth;
 use Illuminate\Http\JsonResponse;
@@ -41,12 +42,15 @@ class CronController extends Controller
         $t0 = microtime(true);
         $result = (new RssFetcher($budget, $sources, 0, false))->run();
         $pruned = RssFetcher::prunePending($keep);
+        $fronts = NewspaperRetention::prune();
 
         return response()->json([
             'ok'         => ! $result['locked'],
             'sources'    => $result['ok'] . '/' . ($result['ok'] + $result['failed']),
             'newItems'   => $result['newItems'],
             'pruned'     => $pruned,
+            'frontPages' => $fronts['files'],
+            'frontMb'    => round($fronts['bytes'] / 1024 / 1024, 2),
             'elapsed'    => round(microtime(true) - $t0, 1),
         ]);
     }
