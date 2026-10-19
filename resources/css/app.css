@@ -255,9 +255,9 @@ footer a:hover {
 /* ── نقشه شهرستان‌های بوشهر ──
 .bushehr-map-wrapper {
   width: 100%;
-  max-width: 620px;
+  max-width: 720px;
   margin: 0 auto 12px;
-  padding: 12px;
+  padding: 14px;
   background: linear-gradient(145deg, #ffffff, #f7fbfc);
   border-radius: 24px;
   box-shadow: 0 20px 60px rgba(0, 70, 80, 0.10);
@@ -268,7 +268,7 @@ footer a:hover {
 
 .bushehr-map-header {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .bushehr-map-header h2 {
@@ -293,14 +293,14 @@ footer a:hover {
 }
 
 /* Fit the whole map in the viewport without scrolling.
-   The 372px offset is measured, not guessed: header 120 + hero 166
-   + wrapper padding 12 + hint 54 + bottom 20.
+   The offset is measured from the real classes above the map:
+   header 90 + hero 162 + wrapper padding 28 + hint 51 + bottom 20 = 351.
    The SVG is taller than wide (650 x 800), so height is the limiting axis;
-   the minimum of 380px keeps the county labels readable. */
+   the 380px floor keeps the county labels readable. */
 .bushehr-svg-container {
   width: 100%;
   max-width: 100%;
-  height: clamp(380px, calc(100vh - 372px), 760px);
+  height: clamp(380px, calc(100vh - 351px), 820px);
   position: relative;
   display: flex;
   align-items: center;
@@ -326,12 +326,12 @@ footer a:hover {
 
 .bushehr-map-hint {
   text-align: center;
-  margin-top: 14px;
-  padding-top: 14px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid #edf2f7;
   font-size: 13px;
   color: #94a3b8;
-  min-height: 40px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -118,7 +118,7 @@ export default function Header({ breakingItems = [] }) {
   return (
     <header className="relative z-50">
       {/* هدر اصلی */}
-      <div className="relative bg-white overflow-hidden h-[120px] lg:h-[200px]">
+      <div className="relative bg-white overflow-hidden h-[90px] lg:h-[140px]">
         <img 
           src="/هدر لیان دید 3.png" 
           alt="هدر لیان دید" 

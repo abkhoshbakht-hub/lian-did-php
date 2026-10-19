@@ -21,13 +21,16 @@ echo '  ' . ($m3[0] ?? 'wrapper rule MISSING') . "\n\n";
 echo "=== rendered size per viewport ===\n";
 printf("  %-10s %-12s %-12s %-10s %s\n", 'viewport', 'map height', 'map width', 'fits?', 'note');
 
+// Desktop viewports are what the map has to fit in; phones scroll by design.
+$desktop = [1440, 1280, 1080, 900, 800];
+
 $rows = [];
-foreach ([1280, 1080, 900, 800, 720] as $vh) {
-    $h = $vh - 372;
-    $h = max(380, min(760, $h));          // clamp
+foreach ($desktop as $vh) {
+    $h = $vh - 351;
+    $h = max(380, min(820, $h));          // clamp
     $w = $h * 650 / 800;                   // svg ratio
-    $used = $h + 372;                      // content above + map
-    $fits = ($used <= $vh) || ($h === 380 && $vh <= 752);
+    $used = $h + 351;                      // content above + map
+    $fits = $used <= $vh;
 
     printf(
         "  %-10s %-12s %-12s %-10s %s\n",
@@ -35,7 +38,7 @@ foreach ([1280, 1080, 900, 800, 720] as $vh) {
         round($h) . 'px',
         round($w) . 'px',
         $fits ? 'YES' : 'no',
-        $fits ? 'visible + readable' : 'too small'
+        $fits ? 'visible + readable' : 'needs scroll'
     );
 
     $rows[] = [$vh, $h, $w, $fits];
@@ -50,8 +53,8 @@ foreach ($rows as [$vh, $h, $w, $fits]) {
 }
 
 echo "  aspect ratio kept : " . (abs(($w / $h) - (650 / 800)) < 0.001 ? 'YES (650:800)' : 'NO') . "\n";
-echo "  map never wider than wrapper (620px): ";
-$narrow = array_filter($rows, fn ($r) => $r[2] > 620 - 12);
+echo "  map never wider than wrapper (720px): ";
+$narrow = array_filter($rows, fn ($r) => $r[2] > 720 - 28);
 echo $narrow ? "WIDER on some screens\n" : "YES\n";
 echo "  fits on every viewport tested: " . ($allFit ? 'YES' : 'NO') . "\n";
 

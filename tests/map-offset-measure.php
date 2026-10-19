@@ -12,10 +12,10 @@ $viewports = [1280, 900, 800, 720];
 $header   = 120;   // header banner, mobile size (most screens we test)
 $heroIcon = 56;    // w-14 h-14
 $heroText = 70;    // two text lines
-$heroPad  = 28;    // py-3 + py-4
+$heroPad  = 24;    // py-3 + py-4
 $heroGap  = 12;    // flex gap
-$mapPad   = 12;    // wrapper padding
-$hint     = 54;    // hint bar + border
+$mapPad   = 28;    // wrapper padding 14px each side
+$hint     = 51;    // 8 margin + 8 padding + 1 border + 34 min-height
 $bottom   = 20;    // breathing room under the map
 
 $offset = $header + $heroIcon + $heroText + $heroPad + $heroGap + $mapPad + $hint + $bottom;
@@ -35,7 +35,7 @@ printf("  TOTAL ABOVE MAP    %4dpx\n\n", $offset);
 echo "=== resulting map size with that offset ===\n";
 printf("  %-10s %-12s %-12s %s\n", 'viewport', 'map height', 'map width', 'verdict');
 $minH = 380;
-$maxH = 760;
+$maxH = 820;
 
 foreach ($viewports as $vh) {
     $raw = $vh - $offset;
