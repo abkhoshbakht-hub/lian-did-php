@@ -9,14 +9,14 @@
  */
 $viewports = [1280, 900, 800, 720];
 
-$header   = 120;   // header banner, mobile size (most screens we test)
+$header   = 120;   // h-[120px] on the header banner
 $heroIcon = 56;    // w-14 h-14
 $heroText = 70;    // two text lines
 $heroPad  = 24;    // py-3 + py-4
 $heroGap  = 12;    // flex gap
-$mapPad   = 28;    // wrapper padding 14px each side
-$hint     = 51;    // 8 margin + 8 padding + 1 border + 34 min-height
-$bottom   = 20;    // breathing room under the map
+$mapPad   = 20;    // wrapper padding 10px each side
+$hint     = 35;    // 4 margin + 4 padding + 1 border + 26 min-height
+$bottom   = 16;
 
 $offset = $header + $heroIcon + $heroText + $heroPad + $heroGap + $mapPad + $hint + $bottom;
 

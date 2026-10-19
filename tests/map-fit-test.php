@@ -26,10 +26,10 @@ $desktop = [1440, 1280, 1080, 900, 800];
 
 $rows = [];
 foreach ($desktop as $vh) {
-    $h = $vh - 351;
-    $h = max(380, min(820, $h));          // clamp
+    $h = $vh - 353;
+    $h = max(380, min(860, $h));          // clamp
     $w = $h * 650 / 800;                   // svg ratio
-    $used = $h + 351;                      // content above + map
+    $used = $h + 353;                      // content above + map
     $fits = $used <= $vh;
 
     printf(
@@ -53,8 +53,8 @@ foreach ($rows as [$vh, $h, $w, $fits]) {
 }
 
 echo "  aspect ratio kept : " . (abs(($w / $h) - (650 / 800)) < 0.001 ? 'YES (650:800)' : 'NO') . "\n";
-echo "  map never wider than wrapper (720px): ";
-$narrow = array_filter($rows, fn ($r) => $r[2] > 720 - 28);
+echo "  map never wider than wrapper (780px): ";
+$narrow = array_filter($rows, fn ($r) => $r[2] > 780 - 20);
 echo $narrow ? "WIDER on some screens\n" : "YES\n";
 echo "  fits on every viewport tested: " . ($allFit ? 'YES' : 'NO') . "\n";
 
