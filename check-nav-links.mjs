@@ -23,10 +23,17 @@ const list = execFileSync('php', ['artisan', 'route:list', '--json'], {
 });
 const routes = JSON.parse(list);
 
-const exists = (p) => routes.some((r) => {
-    const uri = '/' + (r.uri || '').replace(/\?L_\d+.*$/, '').replace(/\{[^}]+\}/g, '');
-    return uri === p.replace(/\/+$/, '') || uri + '/' === p;
-});
+// A route like admin/header/{group} also serves /admin/header/logo.
+// Compare segment by segment: a {placeholder} matches any one segment,
+// every other segment has to be identical.
+const exists = (p) => {
+    const want = p.replace(/\/+$/, '').split('/').filter(Boolean);
+    return routes.some((r) => {
+        const have = (r.uri || '').replace(/\?L_\d+.*$/, '').split('/').filter(Boolean);
+        if (have.length !== want.length) return false;
+        return have.every((seg, i) => seg.includes('{') || seg === want[i]);
+    });
+};
 
 const missing = paths.filter((p) => !exists(p));
 

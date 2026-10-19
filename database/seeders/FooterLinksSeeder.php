@@ -12,7 +12,7 @@ $current = json_decode((string) DB::table('site_settings')->where('key', 'footer
 
 $wanted = [
     ['name' => 'آخرین اخبار', 'href' => '/latest'],
-    ['name' => 'شهرهای استان بوشهر', 'href' => '/category/bushahr/cities'],
+    ['name' => 'اخبار استان بوشهر', 'href' => '/category/bushahr/cities'],
     ['name' => 'روزنامه‌ها', 'href' => '/newspapers'],
     ['name' => 'گالری تصاویر', 'href' => '/gallery'],
 ];

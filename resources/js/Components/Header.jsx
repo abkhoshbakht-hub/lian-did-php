@@ -87,12 +87,9 @@ const categories = [
     { name: 'فیلم', slug: 'videos', href: '/gallery/videos' },
   ]},
   {
-    name: 'شهرهای استان بوشهر',
+    name: 'اخبار استان بوشهر',
     slug: 'ostanha',
     href: '/category/bushahr/cities',
-    subcategories: [
-      { name: 'شهرها', slug: 'cities', href: '/category/bushahr/cities' },
-    ],
   },
 ];
 

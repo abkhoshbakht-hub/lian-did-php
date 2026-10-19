@@ -25,6 +25,25 @@ class RssFetcher
     private const MAX_LINK_LENGTH = 2000;
     private const LOCK_KEY = 'rss.lock';
 
+    /**
+     * Feed tag name => the field it fills on the item.
+     *
+     * Used on the way in and on the way out: while streaming, the reader keeps
+     * the mapped field name, so the closing tag must be mapped back before the
+     * two can be compared.
+     */
+    private const FIELD_MAP = [
+        'title' => 'title',
+        'description' => 'desc',
+        'summary' => 'desc',
+        'content' => 'desc',
+        'pubDate' => 'date',
+        'published' => 'date',
+        'updated' => 'date',
+        'dc:date' => 'date',
+        'link' => 'link',
+    ];
+
     private array $state = [];
 
     public function __construct(
@@ -282,10 +301,12 @@ class RssFetcher
 
                 if ($current === null) continue;
 
-                if ($name === 'title') { $inField = 'title'; }
-                elseif ($name === 'description' || $name === 'summary' || $name === 'content') { $inField = 'desc'; }
-                elseif ($name === 'pubDate' || $name === 'published' || $name === 'updated' || $name === 'dc:date') { $inField = 'date'; }
-                elseif ($name === 'link') {
+                if (array_key_exists($name, self::FIELD_MAP)) {
+                    $inField = self::FIELD_MAP[$name];
+                    continue;
+                }
+
+                if ($name === 'link') {
                     $href = (string) ($reader->getAttribute('href') ?? '');
                     $rel = (string) ($reader->getAttribute('rel') ?? '');
                     if ($rel === 'enclosure' && $href !== '') {
@@ -293,22 +314,26 @@ class RssFetcher
                     } else {
                         $inField = 'link';
                     }
-                }
-                elseif ($name === 'enclosure') {
+                } elseif ($name === 'enclosure') {
                     $type = (string) ($reader->getAttribute('type') ?? '');
                     $url = (string) ($reader->getAttribute('url') ?? '');
                     if ($url !== '' && str_starts_with($type, 'image')) $current['img'] = $url;
-                }
-                elseif ($name === 'guid' && $current['link'] === '') { $inField = 'link'; }
+                } elseif ($name === 'guid' && $current['link'] === '') { $inField = 'link'; }
 
             } elseif ($reader->nodeType === \XMLReader::TEXT || $reader->nodeType === \XMLReader::CDATA) {
                 if ($current !== null && $inField !== null) {
                     $current[$inField] .= $reader->value;
                 }
 
-            } elseif ($reader->nodeType === \XMLReader::END_ELEMENT && $inField !== null) {
-                if ($reader->name === $inField) $inField = null;
+            } elseif ($reader->nodeType === \XMLReader::END_ELEMENT) {
+                // The open field holds a mapped name (date, desc, ...), so the
+                // closing tag has to be mapped back before comparing. Without
+                // this the field never closes and swallows every later node.
+                if ($inField !== null && (self::FIELD_MAP[$reader->name] ?? null) === $inField) {
+                    $inField = null;
+                }
 
+                // Closing the item must not depend on a field still being open.
                 if ($reader->name === 'item' || $reader->name === 'entry') {
                     if ($item = $this->buildItem($current, $source)) $items[] = $item;
                     $current = null;

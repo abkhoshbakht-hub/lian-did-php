@@ -1,59 +1,135 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# لیان دید — PHP / Laravel + Inertia
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+بازسازی کامل سایت خبری «لیان دید» با Laravel و Inertia + React، مطابق نسخهٔ Next.js.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## پیش‌نیازها
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| مورد | حداقل |
+|---|---|
+| PHP | 8.2 |
+| MySQL / MariaDB | 5.7 / 10.3 |
+| اکستنشن‌ها | `pdo_mysql` `mbstring` `openssl` `curl` `fileinfo` `gd` |
+| Node.js | 18 یا بالاتر |
+| Composer | 2 |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+GD برای پردازش تصویر لازم است. اگر فعال نبود، پنل ← **کرون و سلامت سرور** آن را نشان می‌دهد.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## راه‌اندازی از گیت‌هاب
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+git clone https://github.com/abkhoshbakht-hub/lian-did-php.git
+cd lian-did-php
 
-## Laravel Sponsors
+composer install
+npm install
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+cp .env.example .env
+php artisan key:generate
+```
 
-### Premium Partners
+سپس `.env` را با اطلاعات دیتابیس خود پر کنید:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=liandid_php
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-## Contributing
+بعد:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan migrate --force
+php artisan storage:link
+npm run build
+```
 
-## Code of Conduct
+**نکتهٔ مهم برای هاست اشتراکی:** اگر دایرکتوری `public_html` ریشهٔ دامنه است، فایل‌ها را طوری بگذارید که `public/` به‌عنوان ریشهٔ وب سرو شود (یا محتوای `public/` را در `public_html` بریزید و بقیه را یک سطح بالاتر نگه دارید).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## دیتابیس
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+اسکیما از طریق migration ساخته می‌شود. برای بازگردانی یک دامپ آماده:
 
-## License
+```bash
+mysql -u root -p liandid_php < database/liandid_php_YYYYMMDD-HHMMSS.sql
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## مدیریت
+
+پس از بازگردانی دیتابیس، حساب مدیر موجود است. نام کاربری در دامپ آمده و **رمز در هیچ فایلی در گیت نیست** — اگر آن را نمی‌دانید، از طریق دیتابیس یا artisan رمز را تنظیم کنید:
+
+```bash
+php artisan tinker
+>>> App\Models\User::first()->update(['password' => bcrypt('رمز-جدید-قوی')]);
+```
+
+پس از اولین ورود، رمز را از **پنل ← تنظیمات ← تغییر رمز** عوض کنید.
+
+---
+
+## اجرای تست‌های نیازمند ورود
+
+```bash
+$env:ADMIN_EMAIL="..."; $env:ADMIN_PASSWORD="..."
+node check-admin-param-pages.mjs
+```
+
+---
+
+## کارهای زمان‌بندی‌شده (Cron)
+
+هاست اشتراکی معمولاً فقط اجازهٔ «فراخوانی این URL» می‌دهد. توکن را از پنل ← **کرون و سلامت سرور** بردارید.
+
+| آدرس | کار | فاصلهٔ پیشنهادی |
+|---|---|---|
+| `/_cron/rss?token=TOKEN` | دریافت RSS و پاکسازی خبرهای قدیمی | هر ۳۰ دقیقه |
+| `/_cron/backup?token=TOKEN` | بکاپ دیتابیس | روزی یک‌بار |
+| `/_cron/health?token=TOKEN` | گزارش وضعیت سرور | هفتگی |
+
+بدون توکن درست، پاسخ `403` برمی‌گردد.
+
+---
+
+## ساختار
+
+```
+app/Support/          منطق دامنه
+  CityNews.php          اخبار صفحهٔ شهرهای استان
+  HomepageResolver.php  هیرو،Breaking،آخرین اخبار،تحلیل
+  RssFetcher.php        دریافت و پارس فید
+  DatabaseBackup.php    بکاپ بدون فایل موقت
+  ServerHealth.php      بررسی پیش‌نیازهای هاست
+
+resources/js/Pages/   صفحه‌های Inertia
+resources/js/Components/news/   نقشه و اخبار
+public/maps/          نقشهٔ SVG استان بوشهر
+
+tests/                اسکریپت‌های بررسی
+```
+
+---
+
+## بررسی قبل از انتشار
+
+```bash
+node check-pages-exist.mjs        # همهٔ صفحه‌ها فایل دارند
+node check-nav-links.mjs          # لینک‌های پنل به مسیر موجود می‌رسند
+node check-admin-param-pages.mjs  # صفحه‌های پارامتری پنل
+php tests/map-fit-test.php        # اندازهٔ نقشه
+php tests/parser-live-check.php   # تاریخ فیدها
+php tests/about-contact-test.php  # دقت متن درباره ما و تماس
+```
+
+---
+
+## محرمانه‌ها داخل گیت نیستند
+
+`.env`، کلید اپلیکیشن و دیتابیس هرگز commit نمی‌شوند. فایل `.env.example` تنظیمات نمونه را نگه می‌دارد.

@@ -5,8 +5,8 @@ import BushehrMap from '../Components/news/BushehrMap';
 
 export default function CityMap({ news = [] }) {
     return (
-        <MainLayout title="شهرهای استان بوشهر">
-            <Head title="شهرهای استان بوشهر | لیان دید" />
+        <MainLayout title="اخبار استان بوشهر">
+            <Head title="اخبار استان بوشهر | لیان دید" />
 
             <main className="min-h-screen">
                 <section className="relative bg-gradient-to-l from-[#1B365D] to-[#2E5090] overflow-hidden">
@@ -23,10 +23,10 @@ export default function CityMap({ news = [] }) {
                                 </div>
                                 <div>
                                     <h1 className="text-xl md:text-2xl font-black text-white">
-                                        شهرهای استان <span className="text-[#C9A96E]">بوشهر</span>
+                                        اخبار استان <span className="text-[#C9A96E]">بوشهر</span>
                                     </h1>
                                     <p className="text-white/50 text-xs mt-0.5">
-                                        آخرین اخبار ۷ روز اخیر شهرهای استان بوشهر
+                                        آخرین اخبار ۳۰ روز اخیر استان بوشهر
                                     </p>
                                 </div>
                             </div>
