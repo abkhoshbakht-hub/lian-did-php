@@ -15,7 +15,7 @@ export default function CityMap({ news = [] }) {
                         <div className="absolute bottom-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
                     </div>
 
-                    <div className="site-container relative z-10 py-6 md:py-8">
+<div className="site-container relative z-10 py-3 md:py-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 md:w-14 md:h-14 bg-[#C9A96E]/15 backdrop-blur-sm rounded-xl flex items-center justify-center border border-[#C9A96E]/20">
@@ -52,7 +52,7 @@ export default function CityMap({ news = [] }) {
                     </div>
                 </section>
 
-                <div className="site-container py-8">
+                <div className="site-container py-3">
                     <BushehrMap news={news} />
                 </div>
             </main>
