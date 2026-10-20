@@ -117,7 +117,7 @@ export default function Header({ breakingItems = [] }) {
       {/* هدر اصلی */}
       <div className="relative bg-white overflow-hidden h-[120px] lg:h-[200px]">
         <img 
-          src="/هدر لیان دید 3.png" 
+          src="/liandid-header.png" 
           alt="هدر لیان دید" 
           className="absolute inset-0 w-full h-full object-cover object-right lg:object-center" 
         />
