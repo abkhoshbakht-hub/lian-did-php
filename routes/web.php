@@ -285,6 +285,127 @@ Route::get('/newspapers', function () {
     ]);
 })->name('newspapers.index');
 
+Route::get('/newspapers/archive', function () {
+    $papers = \App\Support\NewspaperCatalog::papers();
+    $papers = collect($papers)
+        ->map(fn ($p) => ['id' => $p['id'], 'name' => $p['name'], 'slug' => $p['slug'], 'category' => $p['category']])
+        ->all();
+
+    $dates = DB::table('newspaper_issues')
+        ->where('status', 'PUBLISHED')
+        ->orderByDesc('date')
+        ->distinct()
+        ->pluck('date');
+
+    return Inertia\Inertia::render('NewspapersArchive', [
+        'papers' => $papers,
+        'dates'  => $dates,
+    ]);
+})->name('newspapers.archive');
+
+Route::get('/api/newspapers/archive', function (Illuminate\Http\Request $request) {
+    try {
+        $q = DB::table('newspaper_issues')
+            ->join('newspapers', 'newspaper_issues.newspaperId', '=', 'newspapers.id')
+            ->where('newspaper_issues.status', 'PUBLISHED')
+            ->where('newspapers.active', 1);
+
+        if ($request->query('date')) {
+            $q->where('newspaper_issues.date', $request->query('date'));
+        }
+        if ($paper = $request->query('paper')) {
+            $p = DB::table('newspapers')->where('slug', $paper)->orWhere('id', $paper)->first();
+            if ($p) {
+                $q->where('newspaper_issues.newspaperId', $p->id);
+            }
+        }
+        if ($cat = $request->query('category')) {
+            if (in_array($cat, ['national', 'bushehr', 'sports'])) {
+                $q->where('newspapers.category', $cat);
+            }
+        }
+
+        $page = max(1, (int) $request->query('page', 1));
+        $per = 24;
+
+        $total = (clone $q)->count();
+        $items = $q->orderByDesc('newspaper_issues.date')
+            ->orderBy('newspapers.displayOrder')
+            ->offset(($page - 1) * $per)
+            ->limit($per)
+            ->get([
+                'newspaper_issues.id',
+                'newspaper_issues.persianDate',
+                'newspaper_issues.issueNumber',
+                'newspaper_issues.imageUrl',
+                'newspaper_issues.thumbnailUrl',
+                'newspapers.name as newspaper_name',
+                'newspapers.slug as newspaper_slug',
+                'newspapers.category as newspaper_category',
+            ])
+            ->map(fn ($i) => [
+                'id'           => (string) $i->id,
+                'persianDate'  => $i->persianDate,
+                'issueNumber'  => $i->issueNumber,
+                'imageUrl'     => $i->imageUrl,
+                'thumbnailUrl' => $i->thumbnailUrl,
+                'slug'         => $i->newspaper_slug,
+                'newspaper'    => [
+                    'name'     => $i->newspaper_name,
+                    'slug'     => $i->newspaper_slug,
+                    'category' => $i->newspaper_category,
+                ],
+            ])
+            ->all();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'items' => $items,
+                'total' => $total,
+                'page'  => $page,
+                'pages' => (int) ceil($total / $per),
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => 'خطا'], 500);
+    }
+})->name('newspapers.archive.api');
+
+Route::get('/kiosk', function () {
+    $byDate = [];
+
+    $rows = DB::table('site_settings')
+        ->where('key', 'like', 'frontpage:%')
+        ->orderByDesc('key')
+        ->limit(200)
+        ->get(['key', 'value']);
+
+    foreach ($rows as $r) {
+        $parts = explode(':', $r->key);
+        if (count($parts) < 3) {
+            continue;
+        }
+        $date = $parts[1];
+        $data = json_decode($r->value, true);
+        if (! is_array($data) || empty($data['image']) || empty($data['paper'])) {
+            continue;
+        }
+        if (! isset($byDate[$date])) {
+            $byDate[$date] = [];
+        }
+        $byDate[$date][] = ['paper' => $data['paper'], 'image' => $data['image']];
+    }
+
+    krsort($byDate);
+    $latest = array_key_first($byDate);
+
+    return Inertia\Inertia::render('Kiosk', [
+        'latest' => $latest,
+        'items'  => $latest ? $byDate[$latest] : [],
+    ]);
+})->name('kiosk');
+
 Route::get('/newspapers/{slug}', function ($slug) {
     $paper = \App\Support\NewspaperCatalog::paper($slug);
 
