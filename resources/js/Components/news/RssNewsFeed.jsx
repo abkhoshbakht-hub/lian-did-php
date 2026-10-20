@@ -9,8 +9,17 @@ const COVER_CATS = [
 
 const COVERS_SHOWN = 4;
 
-// تابع کمکی برای فیلتر کردن کاورها (موقتی تا زمان اتصال به بک‌اند)
-const filterDisplayable = (covers) => covers;
+function hasDisplayableCover(paper) {
+  const url = paper.today && (paper.today.thumbnailUrl || paper.today.imageUrl);
+  if (!url || typeof url !== 'string') return false;
+  const u = url.trim();
+  if (u.length < 32) return false;
+  return u.startsWith('data:image/') || /^https?:\/\//i.test(u);
+}
+
+function filterDisplayable(papers) {
+  return (papers || []).filter(hasDisplayableCover);
+}
 
 export default function RssNewsFeed() {
   const [news, setNews] = useState([]);
@@ -21,7 +30,7 @@ export default function RssNewsFeed() {
   const [covers, setCovers] = useState([]);
   const [coversLoading, setCoversLoading] = useState(false);
   const [coverCat, setCoverCat] = useState('all');
-
+  // Dynamic Slot Filling: فقط جلدهای معتبر؛ بدون Slot خالی
   const displayableCovers = useMemo(() => filterDisplayable(covers), [covers]);
   const filteredCovers = coverCat === 'all' ? displayableCovers : displayableCovers.filter((c) => c.category === coverCat);
 
@@ -32,39 +41,41 @@ export default function RssNewsFeed() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // شبیه‌سازی دریافت اخبار از سرور
-  const fetchNews = (category) => {
-    setLoading(true);
-    setTimeout(() => {
-      // داده‌های تستی برای نمایش ظاهر کامپوننت
-      const mockData = [
-        { id: '1', title: 'خبر فوری: آغاز ثبت‌نام طرح‌های جدید مسکن', link: '#', sourceName: 'فارس', category: 'ملی', publishedAt: new Date(Date.now() - 300000).toISOString() },
-        { id: '2', title: 'ترافیک سنگین در محورهای خروجی استان بوشهر', link: '#', sourceName: 'ایرنا', category: 'بوشهر', publishedAt: new Date(Date.now() - 3600000).toISOString() },
-        { id: '3', title: 'افزایش بودجه عمرانی استان در سال آینده', link: '#', sourceName: 'ایسنا', category: 'بوشهر', publishedAt: new Date(Date.now() - 7200000).toISOString() },
-        { id: '4', title: 'تیم ملی والیبال راهی مسابقات جهانی شد', link: '#', sourceName: 'ورزش سه', category: 'ملی', publishedAt: new Date(Date.now() - 86400000).toISOString() },
-      ];
-      setNews(mockData);
+  const fetchNews = async (category) => {
+    try {
+      const params = new URLSearchParams();
+      if (category && category !== 'all') params.set('category', category);
+
+      const res = await fetch(`/api/rss?${params}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setNews(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching RSS:', error);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   useEffect(() => {
     if (activeTab === 'روزنامه') {
       setCoversLoading(true);
-      setTimeout(() => {
-        // داده‌های تستی برای روزنامه‌ها
-        setCovers([
-          { id: '1', name: 'کیهان', slug: 'kayhan', category: 'national', today: { imageUrl: '/og-image.png', thumbnailUrl: '/og-image.png' } },
-          { id: '2', name: 'خبر ورزشی', slug: 'khabar-varzeshi', category: 'sports', today: { imageUrl: '/og-image.png', thumbnailUrl: '/og-image.png' } },
-        ]);
-        setCoversLoading(false);
-      }, 500);
+      fetch('/api/newspapers')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success) setCovers((d.data.papers || []).filter((p) => p.today));
+        })
+        .catch(() => {})
+        .finally(() => setCoversLoading(false));
     } else {
       fetchNews(activeTab);
     }
   }, [activeTab]);
 
   const MOBILE_INITIAL = 8;
+
+  // هر تب دنیای خودش: «همه» فقط خبرگزاری‌ها (بوشهر + سراسری)، روزنامه‌ها فقط در تب خودشان
   const filteredNews = !news ? [] : (activeTab === 'all'
     ? news.filter(n => n.category !== 'روزنامه')
     : news.filter(n => n.category === activeTab)
@@ -146,22 +157,22 @@ export default function RssNewsFeed() {
               </div>
               {filteredCovers.length === 0 && <p className="text-center text-gray-400 text-xs py-6">صفحه امروز هنوز منتشر نشده است</p>}
               <div className="space-y-4">
-              {filteredCovers.slice(0, COVERS_SHOWN).map((p) => (
-                <a key={p.id} href={`/newspapers/${p.slug}`} className="block group">
-                  <img
-                    src={p.today.thumbnailUrl || p.today.imageUrl}
-                    alt={`صفحه اول روزنامه ${p.name}`}
-                    className="w-full rounded-xl border border-gray-100 shadow-sm group-hover:shadow-md transition-shadow"
-                    loading="lazy"
-                  />
-                  <div className="text-center text-xs font-bold text-[#1B365D] mt-1.5">{p.name}</div>
-                </a>
-              ))}
-              {filteredCovers.length > COVERS_SHOWN && (
-                <a href="/newspapers" className="block w-full py-2.5 text-sm font-bold text-white bg-[#1B365D] hover:bg-[#0f2d52] transition-colors rounded-xl text-center">
-                  بیشتر
-                </a>
-              )}
+                {filteredCovers.slice(0, COVERS_SHOWN).map((p) => (
+                  <a key={p.id} href={`/newspapers/${p.slug}`} className="block group">
+                    <img
+                      src={p.today.thumbnailUrl || p.today.imageUrl}
+                      alt={`صفحه اول روزنامه ${p.name}`}
+                      className="w-full rounded-xl border border-gray-100 shadow-sm group-hover:shadow-md transition-shadow"
+                      loading="lazy"
+                    />
+                    <div className="text-center text-xs font-bold text-[#1B365D] mt-1.5">{p.name}</div>
+                  </a>
+                ))}
+                {filteredCovers.length > COVERS_SHOWN && (
+                  <a href="/newspapers" className="block w-full py-2.5 text-sm font-bold text-white bg-[#1B365D] hover:bg-[#0f2d52] transition-colors rounded-xl text-center">
+                    بیشتر
+                  </a>
+                )}
               </div>
             </div>
           )

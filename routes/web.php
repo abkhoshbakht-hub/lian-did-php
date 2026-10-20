@@ -372,6 +372,123 @@ Route::get('/api/newspapers/archive', function (Illuminate\Http\Request $request
     }
 })->name('newspapers.archive.api');
 
+Route::get('/api/newspapers', function () {
+    try {
+        // تاریخ امروز تهران (شمسی) — مطابق lib/newspapers/date در نکست
+        $now = \Carbon\Carbon::now('Asia/Tehran');
+        $gy = (int) $now->format('Y');
+        $gm = (int) $now->format('n');
+        $gd = (int) $now->format('j');
+        $g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+        $gy2 = $gm > 2 ? $gy + 1 : $gy;
+        $days = 355666 + 365 * $gy + intdiv($gy2 + 3, 4) - intdiv($gy2 + 99, 100) + intdiv($gy2 + 399, 400) + $gd + $g_d_m[$gm - 1];
+        $jy = -1595 + 33 * intdiv($days, 12053);
+        $days %= 12053;
+        $jy += 4 * intdiv($days, 1461);
+        $days %= 1461;
+        if ($days > 365) {
+            $jy += intdiv($days - 1, 365);
+            $days = ($days - 1) % 365;
+        }
+        if ($days < 186) {
+            $jm = 1 + intdiv($days, 31);
+            $jd = 1 + ($days % 31);
+        } else {
+            $jm = 7 + intdiv($days - 186, 30);
+            $jd = 1 + (($days - 186) % 30);
+        }
+
+        $q = DB::table('newspapers')->where('active', 1);
+        if ($cat = request()->query('category')) {
+            if (in_array($cat, ['national', 'bushehr', 'sports'])) {
+                $q->where('category', $cat);
+            }
+        }
+        $papers = $q->orderBy('displayOrder')->get(['id', 'name', 'slug', 'category', 'website']);
+
+        $ids = $papers->pluck('id')->all();
+        $issues = DB::table('newspaper_issues')
+            ->whereIn('newspaperId', $ids)
+            ->where('status', 'PUBLISHED')
+            ->orderByDesc('created_at')
+            ->get(['newspaperId', 'imageUrl', 'thumbnailUrl', 'persianDate', 'issueNumber', 'originalUrl', 'date']);
+
+        $map = [];
+        foreach ($issues as $t) {
+            if (! isset($map[$t->newspaperId])) {
+                $map[$t->newspaperId] = $t;
+            }
+        }
+        $missing = collect($ids)->reject(fn ($id) => isset($map[$id]));
+        if ($missing->isNotEmpty()) {
+            $review = DB::table('newspaper_issues')
+                ->whereIn('newspaperId', $missing->all())
+                ->where('status', 'NEEDS_REVIEW')
+                ->whereNotNull('imageUrl')
+                ->where('imageUrl', '!=', '')
+                ->orderByDesc('created_at')
+                ->get(['newspaperId', 'imageUrl', 'thumbnailUrl', 'persianDate', 'issueNumber', 'originalUrl', 'date']);
+            foreach ($review as $t) {
+                if (! isset($map[$t->newspaperId]) && $t->imageUrl) {
+                    $map[$t->newspaperId] = $t;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'date'   => $jy . '/' . str_pad($jm, 2, '0', STR_PAD_LEFT) . '/' . str_pad($jd, 2, '0', STR_PAD_LEFT),
+                'papers' => $papers->map(fn ($p) => [
+                    'id'       => (string) $p->id,
+                    'name'     => $p->name,
+                    'slug'     => $p->slug,
+                    'category' => $p->category,
+                    'website'  => $p->website,
+                    'today'    => isset($map[$p->id]) ? [
+                        'newspaperId' => (string) $map[$p->id]->newspaperId,
+                        'imageUrl'    => $map[$p->id]->imageUrl,
+                        'thumbnailUrl'=> $map[$p->id]->thumbnailUrl,
+                        'persianDate' => $map[$p->id]->persianDate,
+                        'issueNumber' => $map[$p->id]->issueNumber,
+                        'originalUrl' => $map[$p->id]->originalUrl,
+                        'date'        => $map[$p->id]->date,
+                    ] : null,
+                ]),
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => 'خطا'], 500);
+    }
+})->name('newspapers.api');
+
+Route::get('/api/rss', function (Illuminate\Http\Request $request) {
+    try {
+        $q = DB::table('external_news')->where('status', 'APPROVED');
+        if ($cat = $request->query('category')) {
+            $q->where('category', $cat);
+        }
+        $news = $q->orderByDesc('publishedAt')->limit(50)->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $news->map(fn ($n) => [
+                'id'          => (string) $n->id,
+                'title'       => $n->title,
+                'link'        => $n->link,
+                'description' => $n->description,
+                'image'       => $n->image,
+                'source'      => $n->source,
+                'sourceName'  => $n->sourceName,
+                'category'    => $n->category,
+                'publishedAt' => $n->publishedAt ? \Carbon\Carbon::parse($n->publishedAt)->toISOString() : null,
+            ]),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => 'خطا'], 500);
+    }
+})->name('rss.api');
+
 Route::get('/kiosk', function () {
     $byDate = [];
 
