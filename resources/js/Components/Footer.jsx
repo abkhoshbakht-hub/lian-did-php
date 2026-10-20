@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from '@inertiajs/react';
+import React, { useEffect } from 'react';
+import { Link, usePage } from '@inertiajs/react';
 // import NewsletterForm from './NewsletterForm';
 
 const defaultLinks = [
@@ -12,15 +12,11 @@ const defaultLinks = [
 ];
 
 export default function Footer() {
-  const [settings, setSettings] = useState({});
-  const [categories, setCategories] = useState([]);
+  const { props } = usePage();
+  const settings = props.settings || {};
+  const categories = Array.isArray(props.categories) ? props.categories : [];
 
   useEffect(() => {
-    fetch('/api/admin/settings').then(r => r.json()).then(setSettings).catch(() => {});
-    fetch('/api/admin/categories').then(r => r.json()).then(data => {
-      if (data.success) setCategories(data.data.map(c => ({ name: c.name, slug: c.slug })));
-    }).catch(() => {});
-    
     try {
       if (!document.getElementById('erasaneh-seal-script')) {
         const s1 = document.createElement('script');
