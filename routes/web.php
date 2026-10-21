@@ -508,6 +508,30 @@ Route::match(['get', 'post'], '/api/rss/refresh', function (Illuminate\Http\Requ
     }
 })->name('rss.refresh');
 
+Route::match(['get', 'post'], '/api/cron/newspapers', function (Illuminate\Http\Request $request) {
+    $forced = \App\Support\CronToken::valid((string) $request->query('token', ''));
+    $last = \App\Support\SettingStore::get('cron.newspapers.last_at');
+    if (!$forced && $last && now()->diffInMinutes(\Carbon\Carbon::parse($last)) < 18) {
+        return response()->json(['ok' => true, 'skipped' => true, 'lastAt' => $last]);
+    }
+    $max = max(1, min(30, (int) ($request->query('sources', $request->post('sources', 4)))));
+    $paper = $request->query('paper', $request->post('paper'));
+    $t0 = microtime(true);
+    try {
+        $result = \App\Support\NewspaperFetcher::run($max, $paper ?: null);
+        \App\Support\SettingStore::set('cron.newspapers.last_at', now()->toDateTimeString());
+        \App\Support\NewspaperRetention::prune();
+        return response()->json([
+            'ok'        => true,
+            'okSources' => $result['ok'],
+            'failed'    => $result['failed'],
+            'elapsed'   => round(microtime(true) - $t0, 1),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['ok' => false, 'message' => mb_substr($e->getMessage(), 0, 200)]);
+    }
+})->name('cron.newspapers');
+
 Route::get('/kiosk', function () {
     $byDate = [];
 
