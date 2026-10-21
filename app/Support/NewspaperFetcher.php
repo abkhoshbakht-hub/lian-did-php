@@ -17,25 +17,34 @@ use Illuminate\Support\Str;
  */
 if (! function_exists('jdate')) {
     /**
-     * Persian (Jalali) date. Uses Intl when available, otherwise falls back to
-     * a correct conversion for the current Gregorian year range.
+     * Persian (Jalali) date, pure PHP (no intl dependency).
      */
     function jdate(string $format, int $timestamp): string
     {
-        try {
-            $fmt = str_replace(
-                ['Y', 'm', 'd'],
-                ['yyyy', 'MM', 'dd'],
-                $format
-            );
-            $dt = new DateTimeImmutable('@'.$timestamp);
-            $dt->setTimezone(new DateTimeZone('Asia/Tehran'));
-
-            return (new IntlDateFormatter('fa_IR@calendar=persian', IntlDateFormatter::LONG, $fmt, 'Asia/Tehran'))
-                ->format($dt) ?: $dt->format('Y/m/d');
-        } catch (\Throwable) {
-            return date('Y/m/d', $timestamp);
+        $dt = (new \DateTimeImmutable('@'.$timestamp))->setTimezone(new \DateTimeZone('Asia/Tehran'));
+        $gy = (int) $dt->format('Y');
+        $gm = (int) $dt->format('n');
+        $gd = (int) $dt->format('j');
+        $g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+        $gy2 = ($gm > 2) ? ($gy + 1) : $gy;
+        $days = 355666 + (365 * $gy) + intdiv($gy2 + 3, 4) - intdiv($gy2 + 99, 100)
+              + intdiv($gy2 + 399, 400) + $gd + $g_d_m[$gm - 1];
+        $jy = -1595 + (33 * intdiv($days, 12053));
+        $days %= 12053;
+        $jy += 4 * intdiv($days, 1461);
+        $days %= 1461;
+        if ($days > 365) {
+            $jy += intdiv($days - 1, 365);
+            $days = ($days - 1) % 365;
         }
+        $jm = ($days < 186) ? 1 + intdiv($days, 31) : 7 + intdiv($days - 186, 30);
+        $jd = 1 + ($days % 186);
+
+        return str_replace(
+            ['Y', 'm', 'd'],
+            [(string) $jy, sprintf('%02d', $jm), sprintf('%02d', $jd)],
+            $format
+        );
     }
 }
 
@@ -55,13 +64,13 @@ class NewspaperFetcher
         $src = DB::table('newspaper_sources')->where('id', $sourceId)->first();
 
         if (! $src) {
-            return ['ok' => false, 'error' => 'منبع یافت نشد.'];
+            return ['ok' => false, 'error' => '???????? ???????? ??????.'];
         }
         if (! $src->active) {
-            return ['ok' => false, 'error' => 'این منبع غیرفعال است.'];
+            return ['ok' => false, 'error' => '?????? ???????? ?????????????? ??????.'];
         }
         if (empty($src->url)) {
-            return ['ok' => false, 'error' => 'این منبع آدرس ندارد.'];
+            return ['ok' => false, 'error' => '?????? ???????? ???????? ??????????.'];
         }
 
         $paper = DB::table('newspapers')->where('id', $src->newspaperId)->first();
@@ -87,12 +96,12 @@ class NewspaperFetcher
             }
         }
 
-        return ['ok' => false, 'error' => 'تصویر صفحهٔ اول پیدا نشد.'];
+        return ['ok' => false, 'error' => '?????????? ?????????? ?????? ???????? ??????.'];
     }
 
     /**
      * Telegram: use the public web preview and take the newest post from today
-     * whose text looks like a front page (صفحهٔ اول / بلند / پیکربندی / ...).
+     * whose text looks like a front page (?????????? ?????? / ???????? / ???????????????? / ...).
      *
      * @return array<int,string>
      */
@@ -157,7 +166,7 @@ class NewspaperFetcher
 
             // score: front-page wording first, then the paper name
             $score = 0;
-            if (preg_match('~صفحه\s*اول|صفحه\s*نخست|بلند|پیکربندی|صفحه\s*یک~u', $norm)) {
+            if (preg_match('~????????\s*??????|????????\s*????????|????????|????????????????|????????\s*????~u', $norm)) {
                 $score += 60;
             }
             if ($paperNameNorm !== '' && str_contains($norm, $paperNameNorm)) {
@@ -288,7 +297,7 @@ class NewspaperFetcher
                     'date'           => $today,
                     'persianDate'    => jdate('Y/m/d', $today->getTimestamp()),
                     'issueNumber'    => null,
-                    'title'          => 'صفحهٔ اول '.$today->format('Y-m-d'),
+                    'title'          => '?????????? ?????? '.$today->format('Y-m-d'),
                     'originalUrl'    => $s->url,
                     'imageUrl'       => $res['localPath'],
                     'thumbnailUrl'   => $res['localPath'],
@@ -488,7 +497,7 @@ class NewspaperFetcher
     private static function tehranDate(): string
     {
         try {
-            return (new DateTimeZone('Asia/Tehran'))->format('Y-m-d');
+            return (new \DateTimeZone('Asia/Tehran'))->format('Y-m-d');
         } catch (\Throwable) {
             return date('Y-m-d');
         }
@@ -497,7 +506,7 @@ class NewspaperFetcher
     /** Normalise Persian text for containment checks. */
     private static function normFa(string $s): string
     {
-        $s = str_replace(['ي', 'ك', '‌', ' ', "\t", "\n"], ['ی', 'ک', '', '', '', ''], $s);
+        $s = str_replace(['??', '??', '???', ' ', "\t", "\n"], ['??', '??', '', '', '', ''], $s);
 
         return mb_strtolower($s, 'UTF-8');
     }
