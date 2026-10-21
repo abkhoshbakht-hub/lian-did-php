@@ -488,6 +488,26 @@ Route::get('/api/rss', function (Illuminate\Http\Request $request) {
     }
 })->name('rss.api');
 
+// Endpoit cron-job.org / GitHub Action: هرگز ۴۰۴ نمی‌دهد — همیشه ۲۰۰ JSON
+Route::get('/api/rss/refresh', function (Illuminate\Http\Request $request) {
+    $budget = max(10, min(90, (int) $request->query('budget', 45)));
+    $t0 = microtime(true);
+    try {
+        $result = (new \App\Support\RssFetcher($budget, 6, 0, false))->run();
+        $pruned = \App\Support\RssFetcher::prunePending(14);
+        return response()->json([
+            'ok'        => true,
+            'locked'    => $result['locked'] ?? false,
+            'sources'   => $result['ok'] . '/' . ($result['ok'] + $result['failed']),
+            'newItems'  => $result['newItems'],
+            'pruned'    => $pruned,
+            'elapsed'   => round(microtime(true) - $t0, 1),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['ok' => false, 'message' => mb_substr($e->getMessage(), 0, 200)]);
+    }
+})->name('rss.refresh');
+
 Route::get('/kiosk', function () {
     $byDate = [];
 
