@@ -104,8 +104,9 @@ export default function Footer() {
           {/* ستون پنجم: خبرنامه */}
           <div className="text-center col-span-2 md:col-span-2 lg:col-span-1">
             <h3 className="text-[#C9A96E] font-black text-base mb-3">خبرنامه</h3>
-            <p className="text-white/60 text-sm mb-2">آخرین اخبار را در ایمیل خود دریافت کنید</p>
+            <p className="text-white/60 text-sm mb-3">آخرین اخبار را در ایمیل خود دریافت کنید</p>
             {/* <NewsletterForm /> */}
+            <p className="text-white/50 text-xs">— پروانه انتشار: {settings.license || '۹۶۲۲'} —</p>
           </div>
         </div>
 

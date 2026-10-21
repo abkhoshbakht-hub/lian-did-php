@@ -107,16 +107,14 @@ export default function Header({ breakingItems = [] }) {
 
   return (
     <header className="relative z-50">
-      {/* هدر اصلی */}
+      {/* هدر اصلی — قاب ثابت، لوگو کامل سمت راست، لبه چپ با گرادیان محو می‌شود */}
       <div className="relative bg-white overflow-hidden h-[120px] lg:h-[200px]">
         <img
           src="/liandid-header.png"
           alt="هدر لیان دید"
-          className="absolute inset-0 w-full h-full object-cover object-right lg:object-center"
+          className="absolute inset-y-0 right-0 h-full w-auto max-w-none"
         />
-        <div className="absolute z-20 bottom-3 right-12 lg:bottom-auto lg:right-[150px] lg:top-[170px]">
-          <span className="text-[9px] lg:text-[10px] font-bold text-[#1B365D] drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]" style={{ whiteSpace: 'nowrap' }}>— پروانه انتشار: {settings.license || '۹۶۲۲'} —</span>
-        </div>
+        <div className="absolute inset-y-0 left-0 w-40 lg:w-96 bg-gradient-to-r from-white via-white/70 to-transparent pointer-events-none" />
         <div className="site-container h-full flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3"></div>
 
