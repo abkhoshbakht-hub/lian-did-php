@@ -107,14 +107,13 @@ export default function Header({ breakingItems = [] }) {
 
   return (
     <header className="relative z-50">
-      {/* هدر اصلی — قاب ثابت، لوگو کامل سمت راست، لبه چپ با گرادیان محو می‌شود */}
+      {/* هدر اصلی — مطابق نسخهٔ Next.js اصلی */}
       <div className="relative bg-white overflow-hidden h-[120px] lg:h-[200px]">
         <img
           src="/liandid-header.png"
           alt="هدر لیان دید"
-          className="absolute inset-y-0 right-0 h-full w-auto max-w-none"
+          className="absolute inset-0 h-full w-full object-cover object-right lg:object-center"
         />
-        <div className="absolute inset-y-0 left-0 w-40 lg:w-96 bg-gradient-to-r from-white via-white/70 to-transparent pointer-events-none" />
         <div className="site-container h-full flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3"></div>
 
