@@ -490,7 +490,7 @@ Route::get('/api/rss', function (Illuminate\Http\Request $request) {
 
 // Endpoit cron-job.org / GitHub Action: هرگز ۴۰۴ نمی‌دهد — همیشه ۲۰۰ JSON
 Route::get('/api/rss/refresh', function (Illuminate\Http\Request $request) {
-    $budget = max(10, min(90, (int) $request->query('budget', 45)));
+    $budget = max(10, min(22, (int) $request->query('budget', 20)));
     $t0 = microtime(true);
     try {
         $result = (new \App\Support\RssFetcher($budget, 6, 0, false))->run();
