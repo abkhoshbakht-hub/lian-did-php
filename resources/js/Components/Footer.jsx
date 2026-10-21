@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 // import NewsletterForm from './NewsletterForm';
 
@@ -15,25 +15,6 @@ export default function Footer() {
   const { props } = usePage();
   const settings = props.settings || {};
   const categories = Array.isArray(props.categories) ? props.categories : [];
-
-  useEffect(() => {
-    try {
-      if (!document.getElementById('erasaneh-seal-script')) {
-        const s1 = document.createElement('script');
-        s1.id = 'erasaneh-seal-script';
-        s1.src = 'https://trustseal.e-rasaneh.ir/trustseal.js';
-        s1.async = true;
-        s1.onload = () => {
-          try {
-            const s2 = document.createElement('script');
-            s2.text = 'eRasaneh_Trustseal(96227, true);';
-            document.body.appendChild(s2);
-          } catch {}
-        };
-        document.body.appendChild(s1);
-      }
-    } catch {}
-  }, []);
 
   const address = settings.footerAddress || 'بوشهر، امامزاده مهر ۱۸';
   const phone = settings.footerPhone || '۰۹۳۶-۰۲۸-۰۵۶۲';
@@ -53,9 +34,9 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-5 mb-5">
           {/* ستون اول: لوگوی اعلام وصول و توضیحات */}
           <div className="text-center col-span-2 md:col-span-2 lg:col-span-1">
-            <div className="w-[80px] h-[70px] mx-auto mb-2 bg-white rounded-lg p-1 flex items-center justify-center overflow-hidden">
-              <div id="div_eRasanehTrustseal_96227" />
-            </div>
+            <a href="https://e-rasaneh.ir" target="_blank" rel="noopener noreferrer" className="block w-[80px] h-[70px] mx-auto mb-2 bg-white rounded-lg p-1 flex items-center justify-center overflow-hidden">
+              <img src="/static/e-rasaneh-logo.jpg" alt="سامانه جامع رسانه‌های کشور" className="max-w-full max-h-full object-contain" />
+            </a>
             <p className="text-white/70 text-sm leading-6 whitespace-pre-line">{description}</p>
             <div className="mt-3 space-y-1 text-sm">
               <div className="flex items-center justify-center gap-2 text-white/50">
