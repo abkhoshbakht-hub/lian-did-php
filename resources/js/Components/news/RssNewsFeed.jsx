@@ -145,7 +145,7 @@ export default function RssNewsFeed() {
             </div>
           ) : displayableCovers.length === 0 ? (
             <div className="p-12 text-center text-gray-400">
-              <p className="text-sm">صفحه اول امروز هنوز منتشر نشده است</p>
+              <p className="text-sm">صفحه اول روزنامه‌ها به‌زودی...</p>
             </div>
           ) : (
             <div className="p-3">
@@ -170,6 +170,9 @@ export default function RssNewsFeed() {
                       }}
                     />
                     <div className="text-center text-xs font-bold text-[#1B365D] mt-1.5">{p.name}</div>
+                    {p.today && p.today.persianDate && (
+                      <div className="text-center text-[10px] text-gray-400 mt-0.5">{p.today.persianDate}</div>
+                    )}
                   </a>
                 ))}
                 {filteredCovers.length > COVERS_SHOWN && (
