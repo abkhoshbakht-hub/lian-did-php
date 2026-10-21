@@ -145,7 +145,7 @@ export default function RssNewsFeed() {
             </div>
           ) : displayableCovers.length === 0 ? (
             <div className="p-12 text-center text-gray-400">
-              <p className="text-sm">در حال دریافت صفحات اول روزنامه‌ها...</p>
+              <p className="text-sm">صفحه اول امروز هنوز منتشر نشده است</p>
             </div>
           ) : (
             <div className="p-3">
@@ -164,6 +164,10 @@ export default function RssNewsFeed() {
                       alt={`صفحه اول روزنامه ${p.name}`}
                       className="w-full rounded-xl border border-gray-100 shadow-sm group-hover:shadow-md transition-shadow"
                       loading="lazy"
+                      onError={(e) => {
+                        const box = e.target.closest('a');
+                        if (box) { box.style.display = 'none'; }
+                      }}
                     />
                     <div className="text-center text-xs font-bold text-[#1B365D] mt-1.5">{p.name}</div>
                   </a>

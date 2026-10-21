@@ -410,6 +410,7 @@ Route::get('/api/newspapers', function () {
         $issues = DB::table('newspaper_issues')
             ->whereIn('newspaperId', $ids)
             ->where('status', 'PUBLISHED')
+            ->where('persianDate', $jy . '/' . str_pad($jm, 2, '0', STR_PAD_LEFT) . '/' . str_pad($jd, 2, '0', STR_PAD_LEFT))
             ->orderByDesc('created_at')
             ->get(['newspaperId', 'imageUrl', 'thumbnailUrl', 'persianDate', 'issueNumber', 'originalUrl', 'date']);
 
@@ -419,10 +420,10 @@ Route::get('/api/newspapers', function () {
                 $map[$t->newspaperId] = $t;
             }
         }
-        $missing = collect($ids)->reject(fn ($id) => isset($map[$id]));
-        if ($missing->isNotEmpty()) {
+        $missing = collect($ids)->reject(fn ($id) => isset($map[$id]));        if ($missing->isNotEmpty()) {
             $review = DB::table('newspaper_issues')
                 ->whereIn('newspaperId', $missing->all())
+                ->where('persianDate', $jy . '/' . str_pad($jm, 2, '0', STR_PAD_LEFT) . '/' . str_pad($jd, 2, '0', STR_PAD_LEFT))
                 ->where('status', 'NEEDS_REVIEW')
                 ->whereNotNull('imageUrl')
                 ->where('imageUrl', '!=', '')
