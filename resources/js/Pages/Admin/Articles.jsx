@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { bushehrCounties } from '@/Components/admin/regions';
 import { uploadAdminImage } from '@/Components/admin/uploadAdminImage';
+import ImageCropper from '@/Components/admin/ImageCropper';
 
 const STATUS = {
     PUBLISHED: { label: 'منتشر شده', cls: 'bg-emerald-100 text-emerald-700' },
@@ -30,15 +31,29 @@ export default function AdminArticles({ articles = [], categories = [], filters 
     const [errors, setErrors] = useState({});
     const [imgBusy, setImgBusy] = useState(false);
     const fileRef = useRef(null);
+    const [crop, setCrop] = useState(null); // { src, name }
+
+    const onCropDone = (blob) => {
+        const f = crop ? crop.name : 'image.webp';
+        setCrop(null);
+        if (fileRef.current) fileRef.current.value = '';
+        const file = new File([blob], f.replace(/\.[^.]+$/, '') + '.webp', { type: blob.type });
+        setImgBusy(true);
+        uploadAdminImage(file)
+            .then((url) => set('featuredImage', url))
+            .catch((err) => setErrors((o) => ({ ...o, featuredImage: [err.message] })))
+            .finally(() => setImgBusy(false));
+    };
 
     const pickImage = (e) => {
         const f = e.target.files[0];
         if (!f) return;
-        setImgBusy(true);
-        uploadAdminImage(f)
-            .then((url) => set('featuredImage', url))
-            .catch((err) => setErrors((o) => ({ ...o, featuredImage: [err.message] })))
-            .finally(() => setImgBusy(false));
+        setCrop({ src: URL.createObjectURL(f), name: f.name });
+    };
+
+    const cancelCrop = () => {
+        setCrop(null);
+        if (fileRef.current) fileRef.current.value = '';
     };
 
     useEffect(() => {
@@ -227,7 +242,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1.5">عکس شاخصخبر</label>
+                            <label className="block text-xs font-bold text-gray-600 mb-1.5">عکس شاخص خبر</label>
                             <input
                                 ref={fileRef}
                                 type="file"
@@ -331,6 +346,18 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                             {editing ? 'ذخیره تغییرات' : 'انتشار خبر'}
                         </button>
                     </div>
+                    {crop && (
+                        <ImageCropper
+                            imageSrc={crop.src}
+                            fileName={crop.name}
+                            defaultAspect="16:9"
+                            outputWidth={1280}
+                            quality={82}
+                            format="webp"
+                            onDone={onCropDone}
+                            onCancel={cancelCrop}
+                        />
+                    )}
                 </form>
             </div>
         </AdminLayout>

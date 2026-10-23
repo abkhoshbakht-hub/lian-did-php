@@ -2,20 +2,33 @@ import React, { useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { uploadAdminImage } from '@/Components/admin/uploadAdminImage';
+import ImageCropper from '@/Components/admin/ImageCropper';
 
 export default function AdminDashboard({ articles = [], categories = [], stats = {} }) {
     const [activeTab, setActiveTab] = useState('articles');
     const [editingId, setEditingId] = useState(null);
     const fileRef = useRef(null);
     const [imgBusy, setImgBusy] = useState(false);
-    const pickImage = (e) => {
-        const f = e.target.files[0];
-        if (!f) return;
+    const [crop, setCrop] = useState(null); // { src, name }
+    const onCropDone = (blob) => {
+        const f = crop ? crop.name : 'image.webp';
+        setCrop(null);
+        if (fileRef.current) fileRef.current.value = '';
+        const file = new File([blob], f.replace(/\.[^.]+$/, '') + '.webp', { type: blob.type });
         setImgBusy(true);
-        uploadAdminImage(f)
+        uploadAdminImage(file)
             .then((url) => set('featuredImage', url))
             .catch(() => {})
             .finally(() => setImgBusy(false));
+    };
+    const pickImage = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        setCrop({ src: URL.createObjectURL(f), name: f.name });
+    };
+    const cancelCrop = () => {
+        setCrop(null);
+        if (fileRef.current) fileRef.current.value = '';
     };
     const [form, setForm] = useState({
         title: '',
@@ -415,6 +428,18 @@ export default function AdminDashboard({ articles = [], categories = [], stats =
                             </div>
                         </form>
                     </div>
+                )}
+                {crop && (
+                    <ImageCropper
+                        imageSrc={crop.src}
+                        fileName={crop.name}
+                        defaultAspect="16:9"
+                        outputWidth={1280}
+                        quality={82}
+                        format="webp"
+                        onDone={onCropDone}
+                        onCancel={cancelCrop}
+                    />
                 )}
             </div>
         </AdminLayout>
