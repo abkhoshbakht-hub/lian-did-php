@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { uploadAdminImage } from '@/Components/admin/uploadAdminImage';
 import ImageCropper from '@/Components/admin/ImageCropper';
+import { faNum, faDate } from '@/Components/admin/faFormat';
 
 export default function AdminDashboard({ articles = [], categories = [], stats = {} }) {
     const [activeTab, setActiveTab] = useState('articles');
@@ -129,7 +130,7 @@ export default function AdminDashboard({ articles = [], categories = [], stats =
         >
             {label}
             {badge !== null && (
-                <span className="mr-2 text-xs opacity-80">({badge})</span>
+                <span className="mr-2 text-xs opacity-80">({faNum(badge)})</span>
             )}
         </button>
     );
@@ -177,7 +178,7 @@ export default function AdminDashboard({ articles = [], categories = [], stats =
                         <div key={s.label} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-gray-400 font-bold">{s.label}</p>
-                                <h3 className="text-3xl font-black text-[#1B365D] mt-1">{s.value ?? 0}</h3>
+                                <h3 className="text-3xl font-black text-[#1B365D] mt-1">{faNum(s.value ?? 0)}</h3>
                             </div>
                             <div className="w-14 h-14 bg-blue-50 text-[#1B365D] rounded-2xl flex items-center justify-center text-xl">
                                 {s.icon}
@@ -239,9 +240,9 @@ export default function AdminDashboard({ articles = [], categories = [], stats =
                                                     {statusLabel[a.status] || a.status}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-gray-600 font-mono">{a.viewCount || 0}</td>
-                                            <td className="p-4 text-gray-500 text-xs">
-                                                {a.publishedAt ? String(a.publishedAt).slice(0, 10) : '—'}
+                                            <td className="p-4 text-gray-600 font-mono">{faNum(a.viewCount || 0)}</td>
+                                            <td className="p-4 text-gray-500 text-xs" style={{ whiteSpace: 'nowrap' }}>
+                                                {a.publishedAt ? faDate(a.publishedAt) : (a.createdAt ? faDate(a.createdAt) : '—')}
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex items-center justify-center gap-2">

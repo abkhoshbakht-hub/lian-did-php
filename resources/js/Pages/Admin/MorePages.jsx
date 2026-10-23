@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { faDateTime } from '@/Components/admin/faFormat';
 
 const box = 'w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:bg-white focus:border-[#1B365D]';
 const label = 'block text-xs font-bold text-gray-600 mb-1.5';
@@ -232,7 +233,7 @@ export function ExternalNewsPage({ news = [], sources = [], counts = {}, filters
                                     <td className="p-3 text-gray-500 whitespace-nowrap">{n.sourceName}</td>
                                     <td className="p-3 text-gray-400 text-xs">{n.category || '—'}</td>
                                     <td className="p-3"><span className={`text-[11px] px-2 py-1 rounded font-bold ${NEWS_STATUS[n.status]?.[1]}`}>{NEWS_STATUS[n.status]?.[0] || n.status}</span></td>
-                                    <td className="p-3 text-gray-400 text-xs whitespace-nowrap">{String(n.publishedAt ?? '').slice(0, 16)}</td>
+                                    <td className="p-3 text-gray-400 text-xs whitespace-nowrap">{faDateTime(n.publishedAt ?? '')}</td>
                                     <td className="p-3">
                                         <div className="flex gap-1.5">
                                             <button onClick={() => router.post(`/admin/external-news/${n.id}/status`, { status: 'APPROVED' })}
