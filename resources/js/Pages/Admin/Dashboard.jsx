@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { uploadAdminImage } from '@/Components/admin/uploadAdminImage';
 
 export default function AdminDashboard({ articles = [], categories = [], stats = {} }) {
     const [activeTab, setActiveTab] = useState('articles');
     const [editingId, setEditingId] = useState(null);
+    const fileRef = useRef(null);
+    const [imgBusy, setImgBusy] = useState(false);
+    const pickImage = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        setImgBusy(true);
+        uploadAdminImage(f)
+            .then((url) => set('featuredImage', url))
+            .catch(() => {})
+            .finally(() => setImgBusy(false));
+    };
     const [form, setForm] = useState({
         title: '',
         subtitle: '',
@@ -315,14 +327,36 @@ export default function AdminDashboard({ articles = [], categories = [], stats =
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">لینک تصویر شاخص (URL)</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">تصویر شاخص</label>
                                 <input
-                                    type="url"
-                                    value={form.featuredImage}
-                                    onChange={(e) => set('featuredImage', e.target.value)}
-                                    placeholder="https://example.com/image.jpg"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#1B365D] outline-none text-sm"
+                                    ref={fileRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    className="hidden"
+                                    onChange={pickImage}
                                 />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="url"
+                                        value={form.featuredImage}
+                                        onChange={(e) => set('featuredImage', e.target.value)}
+                                        placeholder="https://… یا با دکمهٔ کنار"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#1B365D] outline-none text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => fileRef.current && fileRef.current.click()}
+                                        disabled={imgBusy}
+                                        className="shrink-0 px-4 rounded-xl bg-[#1B365D] text-white text-xs font-bold hover:bg-[#2a4a7a] disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                        {imgBusy ? '…' : 'انتخاب فایل'}
+                                    </button>
+                                </div>
+                                {form.featuredImage && (
+                                    <div className="mt-2 rounded-xl border border-gray-200 overflow-hidden w-48">
+                                        <img src={form.featuredImage} alt="پیش‌نمایش تصویر شاخص" className="w-full h-28 object-cover" />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-8 py-3 bg-gray-50 px-6 rounded-xl border border-gray-100">

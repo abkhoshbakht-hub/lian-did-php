@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { bushehrCounties } from '@/Components/admin/regions';
+import { uploadAdminImage } from '@/Components/admin/uploadAdminImage';
 
 const STATUS = {
     PUBLISHED: { label: 'منتشر شده', cls: 'bg-emerald-100 text-emerald-700' },
@@ -27,6 +28,18 @@ export default function AdminArticles({ articles = [], categories = [], filters 
         isBreaking: false, isFeatured: false, isPinned: false,
     });
     const [errors, setErrors] = useState({});
+    const [imgBusy, setImgBusy] = useState(false);
+    const fileRef = useRef(null);
+
+    const pickImage = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        setImgBusy(true);
+        uploadAdminImage(f)
+            .then((url) => set('featuredImage', url))
+            .catch((err) => setErrors((o) => ({ ...o, featuredImage: [err.message] })))
+            .finally(() => setImgBusy(false));
+    };
 
     useEffect(() => {
         if (editing) {
@@ -214,8 +227,31 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1.5">لینک عکس شاخص</label>
-                            <input value={form.featuredImage} onChange={(e) => set('featuredImage', e.target.value)} placeholder="https://..." dir="ltr" className={field} />
+                            <label className="block text-xs font-bold text-gray-600 mb-1.5">عکس شاخصخبر</label>
+                            <input
+                                ref={fileRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                className="hidden"
+                                onChange={pickImage}
+                            />
+                            <div className="flex gap-2 items-start">
+                                <input value={form.featuredImage} onChange={(e) => set('featuredImage', e.target.value)} placeholder="https://… یا از دکمهٔ «انتخاب فایل»" dir="ltr" className={field} />
+                                <button
+                                    type="button"
+                                    onClick={() => fileRef.current && fileRef.current.click()}
+                                    disabled={imgBusy}
+                                    className="shrink-0 px-3 py-2 rounded-lg bg-[#1B365D] text-white text-xs font-bold hover:bg-[#2a4a7a] disabled:opacity-50 whitespace-nowrap"
+                                >
+                                    {imgBusy ? 'در حال بارگذاری…' : 'انتخاب فایل عکس'}
+                                </button>
+                            </div>
+                            {errors.featuredImage && <p className="text-red-600 text-xs mt-1">{errors.featuredImage[0]}</p>}
+                            {form.featuredImage && (
+                                <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden w-40">
+                                    <img src={form.featuredImage} alt="پیش‌نمایش عکس شاخص" className="w-full h-24 object-cover" />
+                                </div>
+                            )}
                         </div>
                     </div>
 

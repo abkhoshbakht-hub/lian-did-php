@@ -179,6 +179,13 @@ class ImageProcessor
 
         imagedestroy($res);
 
+        if ($ok) {
+            $mirror = $_SERVER['HOME'] ?? '/home/liandidir';
+            $pubTarget = $mirror.'/public_html/storage/'.$rel;
+            @mkdir(dirname($pubTarget), 0755, true);
+            @copy($target, $pubTarget);
+        }
+
         return $ok;
     }
 
