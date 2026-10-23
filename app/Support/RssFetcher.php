@@ -428,6 +428,8 @@ class RssFetcher
         }
 
         try {
+            // auto-approve by default; SettingStore key 'rss_auto_approve' = '0' keeps moderation
+            $auto = SettingStore::get('rss_auto_approve', '1') !== '0';
             DB::table('external_news')->insert([
                 'id' => 'cmt' . substr(str_replace('-', '', Str::uuid()->toString()), 0, 22),
                 'title' => $item['title'],
@@ -438,8 +440,7 @@ class RssFetcher
                 'source' => $item['source'],
                 'sourceName' => $item['sourceName'],
                 'category' => $item['category'],
-                // never auto-approved: an admin publishes it
-                'status' => 'PENDING',
+                'status' => $auto ? 'APPROVED' : 'PENDING',
                 'isBreaking' => 0,
                 'region' => RegionDetector::detect($item['title'], $item['description']),
                 'publishedAt' => $item['publishedAt'],
