@@ -38,9 +38,6 @@ export default function HeroSection({ main, side1, side2 }) {
                 <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryStyle(main.category).gradient}`} />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/90 via-[#0a1628]/25 to-transparent pointer-events-none" />
-              <div className="absolute top-5 right-5 z-20">
-                <img src="/logo.png" alt="لیان دید" className="h-12 sm:h-14 drop-shadow-lg" />
-              </div>
               <div className="absolute bottom-0 right-0 left-0 p-4 sm:p-8 z-20">
                 <div className="max-w-3xl">
                   <h1 className="text-2xl md:text-3xl lg:text-[2.5rem] font-black text-white mb-4 leading-[1.6] group-hover:text-[#C9A96E] transition-colors duration-500 drop-shadow-lg">
