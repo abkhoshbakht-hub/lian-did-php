@@ -46,6 +46,7 @@ class CronController extends Controller
 
         return response()->json([
             'ok'         => ! $result['locked'],
+            'manualMode' => (bool) ($result['manualMode'] ?? false),
             'sources'    => $result['ok'] . '/' . ($result['ok'] + $result['failed']),
             'newItems'   => $result['newItems'],
             'pruned'     => $pruned,

@@ -123,7 +123,7 @@ const NEWS_STATUS = {
     REJECTED: ['رد شده', 'bg-red-100 text-red-700'],
 };
 
-export function ExternalNewsPage({ news = [], sources = [], counts = {}, filters = {} }) {
+export function ExternalNewsPage({ news = [], sources = [], counts = {}, filters = {}, autoFetch = true }) {
     const [sel, setSel] = useState([]);
     const [busy, setBusy] = useState(false);
 
@@ -131,6 +131,11 @@ export function ExternalNewsPage({ news = [], sources = [], counts = {}, filters
         if (!sel.length) return;
         router.post('/admin/external-news/bulk', { ids: sel, status }, { preserveScroll: true });
         setSel([]);
+    };
+
+    const setMode = (on) => {
+        if (on === autoFetch) return;
+        router.post('/admin/rss/auto-fetch', { on: on ? 1 : 0 }, { preserveScroll: true });
     };
 
     const fetchNow = async () => {
@@ -172,13 +177,28 @@ export function ExternalNewsPage({ news = [], sources = [], counts = {}, filters
                 <div className="flex-1 min-w-[220px]">
                     <p className="text-sm font-black text-[#1B365D]">دریافت از خبرگزاری‌ها</p>
                     <p className="text-xs text-gray-600 mt-1 leading-6">
-                        خبرهای جدید <b>منتظر تأیید شما</b> می‌مانند و تا زمانی که تأیید نکنید در سایت منتشر نمی‌شوند.
+                        {autoFetch
+                            ? <>خبرهای جدید <b>منتظر تأیید شما</b> می‌مانند و تا زمانی که تأیید نکنید در سایت منتشر نمی‌شوند.</>
+                            : <>در حالت دستی، دریافت از خبرگزاری‌ها <b>متوقف</b> است — اخبار را از منوی «اضافه کردن خبر جدید» وارد کنید.</>}
                     </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-600">حالت دریافت:</span>
+                    <div className="flex rounded-full bg-white border border-gray-200 p-1 shadow-sm">
+                        <button onClick={() => setMode(true)} type="button"
+                            className={`px-4 py-1.5 rounded-full text-[11px] font-black transition-colors ${autoFetch ? 'bg-emerald-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}>
+                            اتوماتیک
+                        </button>
+                        <button onClick={() => setMode(false)} type="button"
+                            className={`px-4 py-1.5 rounded-full text-[11px] font-black transition-colors ${!autoFetch ? 'bg-[#1B365D] text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}>
+                            دستی
+                        </button>
+                    </div>
                 </div>
                 <a href="/admin/rss-sources" className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700">
                     مدیریت منابع
                 </a>
-                <button onClick={fetchNow} disabled={busy}
+                <button onClick={fetchNow} disabled={busy || !autoFetch} title={!autoFetch ? 'در حالت دستی غیرفعال است' : ''}
                     className="px-6 py-2.5 rounded-xl bg-[#1B365D] text-white text-sm font-bold disabled:opacity-50">
                     {busy ? 'در حال دریافت…' : 'دریافت فوری'}
                 </button>

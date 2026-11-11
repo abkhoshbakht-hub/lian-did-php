@@ -199,6 +199,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // ─────────────────────────── RSS
     Route::get('/rss-sources', [$m, 'rssSources'])->name('admin.rss-sources');
+    Route::post('/rss/auto-fetch', [$m, 'toggleAutoFetch'])->name('admin.rss.auto-fetch');
     Route::post('/rss/fetch', [$m, 'fetchRss'])->name('admin.rss.fetch');
     Route::post('/rss/prune', [$m, 'pruneRss'])->name('admin.rss.prune');
     Route::post('/rss/count', [$m, 'countRssBefore'])->name('admin.rss.count');
@@ -498,6 +499,7 @@ Route::match(['get', 'post'], '/api/rss/refresh', function (Illuminate\Http\Requ
         return response()->json([
             'ok'        => true,
             'locked'    => $result['locked'] ?? false,
+            'manualMode' => (bool) ($result['manualMode'] ?? false),
             'sources'   => $result['ok'] . '/' . ($result['ok'] + $result['failed']),
             'newItems'  => $result['newItems'],
             'pruned'    => $pruned,

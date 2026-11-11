@@ -300,6 +300,7 @@ class ManageController
         $rows = $q->orderByDesc('publishedAt')->limit(300)->get();
 
         return Inertia::render('Admin/ExternalNews', [
+            'autoFetch' => \App\Support\SettingStore::get('rss_auto_fetch', '1') !== '0',
             'news' => $rows->map(fn ($n) => (array) $n + ['isBreaking' => (bool) $n->isBreaking]),
             'sources' => DB::table('external_news')->distinct()->orderBy('sourceName')->pluck('sourceName'),
             'counts' => [
@@ -654,6 +655,10 @@ class ManageController
         $t0 = microtime(true);
         $result = $fetcher->run();
 
+        if ($result['manualMode'] ?? false) {
+            return back()->with('error', 'حالت دستی فعال است؛ دریافت از خبرگزاری‌ها متوقف شده است.');
+        }
+
         if ($result['locked']) {
             return back()->with('error', 'یک دریافت دیگر در حال اجراست؛ کمی بعد دوباره تلاش کنید.');
         }
@@ -670,6 +675,17 @@ class ManageController
         ], JSON_UNESCAPED_UNICODE));
 
         return back()->with('success', $summary);
+    }
+
+    /** یک کلیک: حالت دریافت اخبار — اتوماتیک (RSS روشن) یا دستی (RSS خاموش). */
+    public function toggleAutoFetch(Request $request)
+    {
+        $on = $request->boolean('on');
+        \App\Support\SettingStore::set('rss_auto_fetch', $on ? '1' : '0');
+
+        return back()->with('success', $on
+            ? 'حالت اتوماتیک فعال شد — اخبار از خبرگزاری‌ها دریافت می‌شوند (منتظر تأیید شما).'
+            : 'حالت دستی فعال شد — دریافت از خبرگزاری‌ها متوقف شد؛ اخبار را از «خبر جدید» وارد کنید.');
     }
 
     public function rssSources()

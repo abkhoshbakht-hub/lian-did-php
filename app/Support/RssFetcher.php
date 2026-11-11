@@ -88,6 +88,13 @@ class RssFetcher
 
     public function run(?callable $onSource = null): array
     {
+        if (SettingStore::get('rss_auto_fetch', '1') === '0') {
+            // Manual mode: the admin enters news by hand — every entry point is a no-op.
+            return ['locked' => false, 'manualMode' => true, 'sources' => 0, 'ok' => 0,
+                    'unchanged' => 0, 'failed' => 0, 'newItems' => 0, 'skipped' => 0,
+                    'skippedCooldown' => 0, 'details' => []];
+        }
+
         if (! $this->acquireLock()) {
             return ['locked' => true, 'sources' => 0, 'ok' => 0, 'failed' => 0,
                     'newItems' => 0, 'skipped' => 0, 'skippedCooldown' => 0, 'unchanged' => 0, 'details' => []];
