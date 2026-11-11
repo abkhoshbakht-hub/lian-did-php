@@ -18,7 +18,7 @@ const PLACEMENTS = [
     { value: 'featured', label: 'ویژه' },
 ];
 
-export default function AdminArticles({ articles = [], categories = [], filters = {}, editing = null }) {
+export default function AdminArticles({ articles = [], categories = [], filters = {}, editing = null, new: isNew = false }) {
     const { flash } = usePage().props;
     const [q, setQ] = useState(filters.search || '');
     const [form, setForm] = useState({
@@ -146,8 +146,9 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                 </div>
             </div>
 
+            <div className="flex flex-col">
             {/* ── جدول ── */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div className={`${isNew ? 'order-2' : ''} bg-white rounded-2xl border border-gray-200 overflow-hidden`}>
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="text-sm font-black text-[#1B365D]">{articles.length} خبر</h2>
                 </div>
@@ -206,7 +207,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
             </div>
 
             {/* ── فرم ── */}
-            <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-6">
+            <div className={isNew ? 'order-1 mb-6 bg-white rounded-2xl border border-gray-200 p-6' : 'mt-6 bg-white rounded-2xl border border-gray-200 p-6'}>
                 <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-100">
                     <h2 className="text-base font-black text-[#1B365D]">
                         {editing ? `ویرایش: ${editing.title.slice(0, 40)}` : 'افزودن خبر جدید'}
@@ -359,6 +360,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                         />
                     )}
                 </form>
+            </div>
             </div>
         </AdminLayout>
     );

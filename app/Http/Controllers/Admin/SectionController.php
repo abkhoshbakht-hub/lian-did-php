@@ -73,9 +73,6 @@ class SectionController
             $category = DB::table('categories')->where('slug', $request->string('cat'))->first();
             $q->where('categoryId', $category?->id);
         }
-        if ($request->boolean('new')) {
-            $q->whereRaw('1 = 0');   // empty list; the form opens instead
-        }
         if ($request->filled('search')) {
             $term = '%' . $request->string('search') . '%';
             $q->where(fn ($w) => $w->where('title', 'like', $term)->orWhere('slug', 'like', $term));
@@ -86,6 +83,7 @@ class SectionController
         return Inertia::render('Admin/Articles', [
             'articles'   => $articles,
             'categories' => DB::table('categories')->orderBy('order')->get(),
+            'new'        => $request->boolean('new') || $request->route('new') === '1',
             'filters'    => [
                 'status' => $request->string('status')->toString(),
                 'cat'    => $request->string('cat')->toString(),
