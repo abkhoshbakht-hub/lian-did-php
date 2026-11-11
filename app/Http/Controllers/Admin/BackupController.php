@@ -25,6 +25,16 @@ class BackupController
                 'hasToken' => (bool) SettingStore::get('backup.telegram_token'),
                 'hasChat'  => (bool) SettingStore::get('backup.telegram_chat'),
             ],
+            'weekly' => [
+                'enabled'   => SettingStore::get('backup.weekly.enabled', '0') === '1',
+                'dest'      => SettingStore::get('backup.weekly.dest', 'host') === 'telegram' ? 'telegram' : 'host',
+                'lastAt'    => SettingStore::get('backup.weekly.last_at'),
+                'result'    => json_decode((string) SettingStore::get('backup.weekly.result', ''), true) ?: null,
+                'hostFiles' => collect(glob(storage_path('app/backups/liandid_weekly_*.sql')) ?: [])
+                    ->sortByDesc(fn ($f) => filemtime($f))
+                    ->map(fn ($f) => ['name' => basename($f), 'size' => $this->humanSize((int) filesize($f))])
+                    ->values()->all(),
+            ],
             'lastBackup' => SettingStore::get('backup.last_at'),
         ]);
     }
@@ -66,6 +76,42 @@ class BackupController
         if (! empty($data['chat']))  SettingStore::set('backup.telegram_chat', trim($data['chat']));
 
         return back()->with('success', 'تنظیمات تلگرام ذخیره شد.');
+    }
+
+    /** یک کلیک: فعال/خاموش کردن بکاپ هفتگی + انتخاب مقصد (هاست یا تلگرام). */
+    public function saveWeekly(Request $request)
+    {
+        $data = $request->validate([
+            'on'   => 'required|boolean',
+            'dest' => 'required|in:host,telegram',
+        ]);
+
+        if ($data['on'] && $data['dest'] === 'telegram'
+            && ((string) SettingStore::get('backup.telegram_token', '') === ''
+                || (string) SettingStore::get('backup.telegram_chat', '') === '')) {
+            return back()->with('error', 'برای ذخیرهٔ هفتگی در تلگرام، اول «توکن ربات» و «شناسه چت» را در همین صفحه ذخیره کنید.');
+        }
+
+        \App\Support\WeeklyBackup::setConfig((bool) $data['on'], $data['dest']);
+
+        return back()->with('success', $data['on']
+            ? ($data['dest'] === 'telegram'
+                ? 'بکاپ هفتگی فعال شد — هر هفته به تلگرام ارسال می‌شود.'
+                : 'بکاپ هفتگی فعال شد — هر هفته روی همین هاست ذخیره می‌شود (۴ نسخهٔ آخر نگه داشته می‌شود).')
+            : 'بکاپ هفتگی خاموش شد.');
+    }
+
+    /** دانلود یکی از نسخه‌های هفتگی ذخیره‌شده روی هاست. */
+    public function downloadWeekly(Request $request)
+    {
+        $name = basename((string) $request->query('f', ''));
+        $path = storage_path('app/backups/' . $name);
+
+        if ($name === '' || ! str_starts_with($name, 'liandid_weekly_') || ! is_file($path)) {
+            abort(404);
+        }
+
+        return response()->download($path, $name);
     }
 
     private function humanSize(int $bytes): string

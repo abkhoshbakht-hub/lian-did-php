@@ -299,8 +299,8 @@ class DatabaseBackup
         return "'" . $escaped . "'";
     }
 
-    public static function filename(): string
+    public static function filename(string $kind = 'php'): string
     {
-        return 'liandid_php_' . date('Y-m-d_His') . '.sql';
+        return 'liandid_' . $kind . '_' . date('Y-m-d_His') . '.sql';
     }
 }

@@ -211,6 +211,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/backup/download', [$b, 'download'])->name('admin.backup.download');
     Route::post('/backup/telegram', [$b, 'sendTelegram'])->name('admin.backup.telegram');
     Route::post('/backup/telegram/settings', [$b, 'saveTelegram'])->name('admin.backup.telegram.settings');
+    Route::post('/backup/weekly', [$b, 'saveWeekly'])->name('admin.backup.weekly');
+    Route::get('/backup/weekly/file', [$b, 'downloadWeekly'])->name('admin.backup.weekly.file');
 
     // ─────────────────────────── راهنما
     Route::get('/help', [$m, 'help'])->name('admin.help');
@@ -496,6 +498,7 @@ Route::match(['get', 'post'], '/api/rss/refresh', function (Illuminate\Http\Requ
     try {
         $result = (new \App\Support\RssFetcher($budget, 6, 0, false))->run();
         $pruned = \App\Support\RssFetcher::prunePending(14);
+        $weekly = \App\Support\WeeklyBackup::maybeRun();
         return response()->json([
             'ok'        => true,
             'locked'    => $result['locked'] ?? false,
@@ -503,6 +506,7 @@ Route::match(['get', 'post'], '/api/rss/refresh', function (Illuminate\Http\Requ
             'sources'   => $result['ok'] . '/' . ($result['ok'] + $result['failed']),
             'newItems'  => $result['newItems'],
             'pruned'    => $pruned,
+            'weekly'    => $weekly,
             'elapsed'   => round(microtime(true) - $t0, 1),
         ]);
     } catch (\Throwable $e) {

@@ -43,6 +43,7 @@ class CronController extends Controller
         $result = (new RssFetcher($budget, $sources, 0, false))->run();
         $pruned = RssFetcher::prunePending($keep);
         $fronts = NewspaperRetention::prune();
+        $weekly = \App\Support\WeeklyBackup::maybeRun();
 
         return response()->json([
             'ok'         => ! $result['locked'],
@@ -50,6 +51,7 @@ class CronController extends Controller
             'sources'    => $result['ok'] . '/' . ($result['ok'] + $result['failed']),
             'newItems'   => $result['newItems'],
             'pruned'     => $pruned,
+            'weekly'     => $weekly,
             'frontPages' => $fronts['files'],
             'frontMb'    => round($fronts['bytes'] / 1024 / 1024, 2),
             'elapsed'    => round(microtime(true) - $t0, 1),

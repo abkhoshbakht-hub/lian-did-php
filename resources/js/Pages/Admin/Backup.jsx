@@ -1,12 +1,34 @@
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 
-export default function AdminBackup({ stats = {}, telegram = {}, lastBackup = null }) {
+export default function AdminBackup({ stats = {}, telegram = {}, lastBackup = null, weekly = {} }) {
     const { flash } = usePage().props;
     const [busy, setBusy] = useState(false);
     const [token, setToken] = useState('');
     const [chat, setChat] = useState('');
+    const [askDest, setAskDest] = useState(false);
+
+    const w = { enabled: false, dest: 'host', lastAt: null, result: null, hostFiles: [], ...weekly };
+
+    // روشن‌کردن = سوال «کجا ذخیره شود؟»؛ خاموش‌کردن = بلافاصله
+    const toggleWeekly = () => {
+        if (w.enabled) {
+            router.post('/admin/backup/weekly', { on: 0, dest: w.dest === 'telegram' ? 'telegram' : 'host' }, { preserveScroll: true });
+            return;
+        }
+        setAskDest(true);
+    };
+
+    const chooseWeeklyDest = (dest) => {
+        setAskDest(false);
+        router.post('/admin/backup/weekly', { on: 1, dest }, { preserveScroll: true });
+    };
+
+    const changeWeeklyDest = (dest) => {
+        if (dest === w.dest || !w.enabled) return;
+        router.post('/admin/backup/weekly', { on: 1, dest }, { preserveScroll: true });
+    };
 
     // The dump is streamed by the server straight into the browser download,
     // so nothing is ever written to the hosting disk.
@@ -115,6 +137,58 @@ export default function AdminBackup({ stats = {}, telegram = {}, lastBackup = nu
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                        <h2 className="text-base font-black text-[#1B365D]">بکاپ هفتگی خودکار</h2>
+                        <button onClick={toggleWeekly} type="button"
+                            className={`px-6 py-2 rounded-xl text-sm font-bold transition-colors ${w.enabled ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                            {w.enabled ? '✓ فعال — برای خاموش‌کردن کلیک کنید' : 'خاموش — برای روشن‌کردن کلیک کنید'}
+                        </button>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-7 mb-4">
+                        هر هفته یک نسخهٔ کامل از دیتابیس به‌صورت خودکار گرفته می‌شود — از طریق
+                        <b> همان کرون موجود سایت</b>، بدون نیاز به ثبت کرون جدید.
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <span className="text-xs font-bold text-gray-600">مقصد ذخیره:</span>
+                        <div className="flex rounded-full bg-gray-100 p-1">
+                            <button onClick={() => changeWeeklyDest('host')} type="button"
+                                className={`px-4 py-1.5 rounded-full text-[11px] font-black transition-colors ${w.dest !== 'telegram' ? 'bg-[#1B365D] text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}>
+                                💾 روی همین هاست
+                            </button>
+                            <button onClick={() => changeWeeklyDest('telegram')} type="button"
+                                className={`px-4 py-1.5 rounded-full text-[11px] font-black transition-colors ${w.dest === 'telegram' ? 'bg-[#1B365D] text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}>
+                                ✈️ تلگرام
+                            </button>
+                        </div>
+                    </div>
+
+                    {w.enabled && w.lastAt && (
+                        <p className="text-xs text-gray-500">
+                            آخرین بکاپ هفتگی: <b>{w.lastAt}</b>
+                            {w.result?.target === 'telegram' && ' — ارسال به تلگرام ✓'}
+                            {w.result?.target === 'host' && w.result?.file && <> — فایل <span dir="ltr" className="font-mono">{w.result.file}</span></>}
+                        </p>
+                    )}
+
+                    {(w.hostFiles || []).length > 0 && (
+                        <div className="mt-3 space-y-1.5">
+                            <p className="text-xs font-bold text-gray-500">نسخه‌های هفتگی روی هاست (۴ نسخهٔ آخر):</p>
+                            {w.hostFiles.map((f) => (
+                                <div key={f.name} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-xs">
+                                    <span dir="ltr" className="font-mono text-gray-700">{f.name}</span>
+                                    <span className="flex items-center gap-3">
+                                        <span className="text-gray-400">{f.size}</span>
+                                        <a href={`/admin/backup/weekly/file?f=${encodeURIComponent(f.name)}`}
+                                            className="font-bold text-[#1B365D] hover:underline">دانلود</a>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="bg-white rounded-2xl border border-gray-200 p-6">
                     <h2 className="text-base font-black text-[#1B365D]">دانلود روی کامپیوتر خودتان</h2>
                     <p className="text-sm text-gray-600 mt-2 mb-4 leading-7">
                         فایل پشتیبان <b>مستقیماً در مرورگر شما ساخته و دانلود می‌شود</b> و
@@ -166,6 +240,42 @@ export default function AdminBackup({ stats = {}, telegram = {}, lastBackup = nu
                     </p>
                 </div>
             </div>
+
+            {/* پنجرهٔ سوال: بکاپ هفتگی کجا ذخیره شود؟ */}
+            {askDest && (
+                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+                    onClick={() => setAskDest(false)}>
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-base font-black text-[#1B365D] mb-2">بکاپ هفتگی کجا ذخیره شود؟</h3>
+                        <p className="text-xs text-gray-600 leading-6 mb-4">
+                            هر هفته یک نسخهٔ کامل از دیتابیس تهیه می‌شود. مقصد را انتخاب کنید
+                            (بعداً هم از همین صفحه قابل تغییر است):
+                        </p>
+                        <div className="space-y-2">
+                            <button onClick={() => chooseWeeklyDest('host')} type="button"
+                                className="w-full text-right px-4 py-3 rounded-xl border border-gray-200 hover:border-[#C9A96E] hover:bg-[#C9A96E]/5 text-sm font-bold text-gray-800 transition-colors">
+                                💾 روی همین هاست
+                                <span className="block text-[11px] font-bold text-gray-500 mt-1">۴ نسخهٔ آخر نگه داشته می‌شود</span>
+                            </button>
+                            <button onClick={() => chooseWeeklyDest('telegram')} type="button"
+                                className="w-full text-right px-4 py-3 rounded-xl border border-gray-200 hover:border-[#C9A96E] hover:bg-[#C9A96E]/5 text-sm font-bold text-gray-800 transition-colors">
+                                ✈️ ارسال به تلگرام
+                                <span className="block text-[11px] font-bold text-gray-500 mt-1">بیرون از هاست نگه داشته می‌شود</span>
+                                {(!telegram.hasToken || !telegram.hasChat) && (
+                                    <span className="block text-[11px] font-bold text-amber-600 mt-1">
+                                        ⚠️ اول «توکن ربات» و «شناسه چت» را در بخش تلگرام همین صفحه ذخیره کنید
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                        <button onClick={() => setAskDest(false)} type="button"
+                            className="mt-4 w-full py-2 rounded-xl bg-gray-100 text-gray-500 text-xs font-bold hover:bg-gray-200">
+                            انصراف
+                        </button>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }
