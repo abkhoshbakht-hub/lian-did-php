@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
+import ExtImg from './ExtImg';
 
 // توابع کمکی
 const timeAgo = (dateString) => {
@@ -51,7 +52,7 @@ export default function LatestNews({ items = [] }) {
             {/* Thumbnail */}
             <div className="relative w-28 sm:w-40 md:w-52 flex-shrink-0 overflow-hidden bg-gray-100">
               {news.image ? (
-                <img src={news.image} alt={news.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <ExtImg src={news.image} alt={news.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
               ) : (
                 <div className={`w-full h-full bg-gradient-to-br ${getCategoryStyle(news.category).gradient}`} />
               )}
