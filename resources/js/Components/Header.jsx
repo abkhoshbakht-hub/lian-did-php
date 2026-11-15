@@ -112,7 +112,7 @@ export default function Header({ breakingItems = [] }) {
         <img
           src="/liandid-header.png"
           alt="هدر لیان دید"
-          className="absolute inset-0 h-full w-full object-cover object-right lg:object-center"
+          className="absolute inset-0 h-full w-full object-cover object-right lg:object-contain lg:object-right"
         />
         <div className="site-container h-full flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3"></div>
