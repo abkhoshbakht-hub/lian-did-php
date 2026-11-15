@@ -40,7 +40,7 @@ export default function HeroSection({ main, side1, side2 }) {
               )}
               <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0a1628]/95 via-[#0a1628]/50 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 right-0 left-0 p-4 sm:p-5 z-20">
-                <div className="max-w-lg text-right">
+                <div className="text-right">
                   <div className="w-8 h-[3px] bg-[#C9A96E] rounded-full mb-2.5" />
                   <h1 className="text-lg md:text-xl lg:text-[1.55rem] font-bold text-white mb-2 leading-[1.7] line-clamp-2 group-hover:text-[#E7CF9F] transition-colors duration-500 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]">
                     {main.title}
@@ -76,13 +76,6 @@ export default function HeroSection({ main, side1, side2 }) {
                   <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryStyle(news.category).gradient}`} />
                 )}
                 <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#0a1628]/95 via-[#0a1628]/45 to-transparent" />
-                {news.category && news.category !== 'بوشهر' && (
-                  <div className="absolute top-3 right-3 z-20">
-                    <span className={`inline-block text-[10px] px-2.5 py-1 rounded-full font-bold text-white ${getCategoryStyle(news.category).bg} shadow-lg`}>
-                      {news.category}
-                    </span>
-                  </div>
-                )}
                 <div className="absolute bottom-0 right-0 left-0 p-3.5 z-20">
                   <h3 className="text-sm md:text-[15px] font-bold text-white group-hover:text-[#E7CF9F] transition-colors duration-300 line-clamp-2 leading-[1.6] drop-shadow-[0_1px_8px_rgba(0,0,0,0.75)]">
                     {news.title}
