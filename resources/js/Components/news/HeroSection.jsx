@@ -39,23 +39,24 @@ export default function HeroSection({ main, side1, side2 }) {
                 <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryStyle(main.category).gradient}`} />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/90 via-[#0a1628]/25 to-transparent pointer-events-none" />
-              <div className="absolute bottom-0 right-0 left-0 p-4 sm:p-8 z-20">
-                <div className="max-w-3xl">
-                  <h1 className="text-2xl md:text-3xl lg:text-[2.5rem] font-black text-white mb-4 leading-[1.6] group-hover:text-[#C9A96E] transition-colors duration-500 drop-shadow-lg">
+              <div className="absolute bottom-0 right-0 left-0 p-4 sm:p-6 lg:p-8 z-20">
+                <div className="max-w-xl lg:max-w-2xl text-right">
+                  <div className="w-12 h-1 bg-[#C9A96E] rounded-full mb-3 sm:mb-4" />
+                  <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-extrabold text-white mb-2.5 sm:mb-3 leading-[1.8] line-clamp-2 group-hover:text-[#C9A96E] transition-colors duration-500 drop-shadow">
                     {main.title}
                   </h1>
                   {main.description && (
-                    <p className="text-white/70 text-sm md:text-base line-clamp-2 mb-5 leading-relaxed drop-shadow">
+                    <p className="text-white/70 text-[11px] sm:text-xs md:text-sm line-clamp-1 mb-3 leading-relaxed drop-shadow">
                       {main.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 text-xs text-white/60">
+                  <div className="flex items-center gap-3 text-[10px] sm:text-xs text-white/60">
                     <span className="flex items-center gap-1.5">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       {timeAgo(main.publishedAt)}
                     </span>
                     <span className="w-1 h-1 bg-[#C9A96E] rounded-full" />
-                    <span className="bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-full font-medium">{main.sourceName}</span>
+                    <span className="bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full font-medium">{main.sourceName}</span>
                   </div>
                 </div>
               </div>
@@ -87,11 +88,11 @@ export default function HeroSection({ main, side1, side2 }) {
                     </span>
                   </div>
                 )}
-                <div className="absolute bottom-0 right-0 left-0 p-5 z-20">
-                  <h3 className="text-base font-black text-white group-hover:text-[#C9A96E] transition-colors duration-300 line-clamp-2 leading-[1.8] drop-shadow-lg">
+                <div className="absolute bottom-0 right-0 left-0 p-4 z-20">
+                  <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-[#C9A96E] transition-colors duration-300 line-clamp-2 leading-[1.7] drop-shadow">
                     {news.title}
                   </h3>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-white/50">
+                  <div className="flex items-center gap-2 mt-1.5 text-[10px] md:text-xs text-white/50">
                     <span>{news.sourceName}</span>
                     <span className="w-1 h-1 bg-white/30 rounded-full" />
                     <span>{timeAgo(news.publishedAt)}</span>
