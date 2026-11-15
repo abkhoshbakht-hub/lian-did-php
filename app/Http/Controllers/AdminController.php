@@ -21,9 +21,9 @@ class AdminController extends Controller
     /**
      * Build a URL-safe slug that keeps Persian letters (Str::slug strips them).
      */
-    private function makeSlug(string $title, ?string $ignoreId = null): string
+    private function makeSlug(?string $title, ?string $ignoreId = null): string
     {
-        $slug = preg_replace('/[^\p{L}\p{N}]+/u', '-', $title) ?? '';
+        $slug = preg_replace('/[^\p{L}\p{N}]+/u', '-', $title ?? '') ?? '';
         $slug = trim($slug, '-');
         if ($slug === '') {
             $slug = 'news';
@@ -57,10 +57,10 @@ class AdminController extends Controller
     private function payload(Request $request, array $columns): array
     {
         $data = [
-            'title'         => $request->input('title'),
+            'title'         => (string) $request->input('title'),
             'subtitle'      => $request->input('subtitle'),
             'excerpt'       => $request->input('excerpt', ''),
-            'content'       => $request->input('content'),
+            'content'       => (string) $request->input('content'),
             'status'        => $request->input('status', 'PUBLISHED'),
             'featuredImage' => $request->input('featuredImage') ?: null,
             'source'        => $request->input('source'),
@@ -143,9 +143,9 @@ class AdminController extends Controller
     public function storeArticle(Request $request)
     {
         $request->validate([
-            'title'      => 'required|string|max:255',
-            'content'    => 'required|string',
-            'categoryId' => 'required',
+            'title'      => 'nullable|string|max:255',
+            'content'    => 'nullable|string',
+            'categoryId' => 'nullable',
             'excerpt'    => 'nullable|string',
         ]);
 
@@ -177,9 +177,9 @@ class AdminController extends Controller
     public function updateArticle(Request $request, $id)
     {
         $request->validate([
-            'title'      => 'required|string|max:255',
-            'content'    => 'required|string',
-            'categoryId' => 'required',
+            'title'      => 'nullable|string|max:255',
+            'content'    => 'nullable|string',
+            'categoryId' => 'nullable',
         ]);
 
         $article = DB::table('articles')->where('id', $id)->first();

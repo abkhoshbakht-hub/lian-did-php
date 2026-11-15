@@ -221,8 +221,8 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                     {/* ستون اصلی */}
                     <div className="lg:col-span-2 space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1.5">عنوان *</label>
-                            <input value={form.title} onChange={(e) => set('title', e.target.value)} required className={field} />
+                            <label className="block text-xs font-bold text-gray-600 mb-1.5">عنوان</label>
+                            <input value={form.title} onChange={(e) => set('title', e.target.value)} className={field} />
                             {errors.title && <p className="text-red-600 text-xs mt-1">{errors.title}</p>}
                         </div>
 
@@ -237,8 +237,8 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1.5">متن کامل *</label>
-                            <textarea value={form.content} onChange={(e) => set('content', e.target.value)} rows="10" required className={field} />
+                            <label className="block text-xs font-bold text-gray-600 mb-1.5">متن کامل</label>
+                            <textarea value={form.content} onChange={(e) => set('content', e.target.value)} rows="10" className={field} />
                             {errors.content && <p className="text-red-600 text-xs mt-1">{errors.content}</p>}
                         </div>
 
@@ -275,7 +275,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                     <div className="space-y-4">
                         <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                             <div>
-                                <label className="block text-xs font-bold text-gray-600 mb-1.5">دسته‌بندی *</label>
+                                <label className="block text-xs font-bold text-gray-600 mb-1.5">دسته‌بندی</label>
                                 <select value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)} className={field}>
                                     {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
