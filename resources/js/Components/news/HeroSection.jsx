@@ -38,25 +38,20 @@ export default function HeroSection({ main, side1, side2 }) {
               ) : (
                 <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryStyle(main.category).gradient}`} />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/90 via-[#0a1628]/25 to-transparent pointer-events-none" />
-              <div className="absolute bottom-0 right-0 left-0 p-4 sm:p-6 lg:p-8 z-20">
-                <div className="max-w-xl lg:max-w-2xl text-right">
-                  <div className="w-12 h-1 bg-[#C9A96E] rounded-full mb-3 sm:mb-4" />
-                  <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-extrabold text-white mb-2.5 sm:mb-3 leading-[1.8] line-clamp-2 group-hover:text-[#C9A96E] transition-colors duration-500 drop-shadow">
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0a1628]/95 via-[#0a1628]/50 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 right-0 left-0 p-4 sm:p-5 z-20">
+                <div className="max-w-lg text-right">
+                  <div className="w-8 h-[3px] bg-[#C9A96E] rounded-full mb-2.5" />
+                  <h1 className="text-lg md:text-xl lg:text-[1.55rem] font-bold text-white mb-2 leading-[1.7] line-clamp-2 group-hover:text-[#E7CF9F] transition-colors duration-500 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]">
                     {main.title}
                   </h1>
-                  {main.description && (
-                    <p className="text-white/70 text-[11px] sm:text-xs md:text-sm line-clamp-1 mb-3 leading-relaxed drop-shadow">
-                      {main.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-3 text-[10px] sm:text-xs text-white/60">
+                  <div className="flex items-center gap-2.5 text-[10px] sm:text-[11px] text-white/85">
                     <span className="flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       {timeAgo(main.publishedAt)}
                     </span>
                     <span className="w-1 h-1 bg-[#C9A96E] rounded-full" />
-                    <span className="bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full font-medium">{main.sourceName}</span>
+                    <span className="bg-[#C9A96E]/15 border border-[#C9A96E]/30 text-[#E7CF9F] px-2.5 py-0.5 rounded-full font-medium">{main.sourceName}</span>
                   </div>
                 </div>
               </div>
@@ -80,19 +75,19 @@ export default function HeroSection({ main, side1, side2 }) {
                 ) : (
                   <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryStyle(news.category).gradient}`} />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/30 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#0a1628]/95 via-[#0a1628]/45 to-transparent" />
                 {news.category && news.category !== 'بوشهر' && (
-                  <div className="absolute top-4 right-4 z-20">
-                    <span className={`inline-block text-[11px] px-3 py-1.5 rounded-full font-bold text-white ${getCategoryStyle(news.category).bg} shadow-lg`}>
+                  <div className="absolute top-3 right-3 z-20">
+                    <span className={`inline-block text-[10px] px-2.5 py-1 rounded-full font-bold text-white ${getCategoryStyle(news.category).bg} shadow-lg`}>
                       {news.category}
                     </span>
                   </div>
                 )}
-                <div className="absolute bottom-0 right-0 left-0 p-4 z-20">
-                  <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-[#C9A96E] transition-colors duration-300 line-clamp-2 leading-[1.7] drop-shadow">
+                <div className="absolute bottom-0 right-0 left-0 p-3.5 z-20">
+                  <h3 className="text-sm md:text-[15px] font-bold text-white group-hover:text-[#E7CF9F] transition-colors duration-300 line-clamp-2 leading-[1.6] drop-shadow-[0_1px_8px_rgba(0,0,0,0.75)]">
                     {news.title}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] md:text-xs text-white/50">
+                  <div className="flex items-center gap-2 mt-1 text-[10px] md:text-[11px] text-white/80">
                     <span>{news.sourceName}</span>
                     <span className="w-1 h-1 bg-white/30 rounded-full" />
                     <span>{timeAgo(news.publishedAt)}</span>
