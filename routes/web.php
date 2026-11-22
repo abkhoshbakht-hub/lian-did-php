@@ -97,6 +97,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/articles', [$s, 'articles'])->name('admin.articles');
     Route::post('/articles', [\App\Http\Controllers\AdminController::class, 'storeArticle'])->name('admin.articles.store');
     Route::put('/articles/{id}', [\App\Http\Controllers\AdminController::class, 'updateArticle'])->name('admin.articles.update');
+    Route::post('/articles/{id}/duplicate', [\App\Http\Controllers\AdminController::class, 'duplicateArticle'])->name('admin.articles.duplicate');
+    Route::post('/articles/{id}/status', [\App\Http\Controllers\AdminController::class, 'setArticleStatus'])->name('admin.articles.status');
+    Route::post('/articles/{id}/shortlink', [\App\Http\Controllers\AdminController::class, 'articleShortlink'])->name('admin.articles.shortlink');
     Route::delete('/articles/{id}', [\App\Http\Controllers\AdminController::class, 'destroyArticle'])->name('admin.articles.destroy');
 
     // مدیریت محتوا

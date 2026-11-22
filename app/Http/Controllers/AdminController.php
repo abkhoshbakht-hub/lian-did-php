@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Support\SettingStore;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -196,6 +197,90 @@ class AdminController extends Controller
         DB::table('articles')->where('id', $id)->update($data);
 
         return back()->with('success', 'تغییرات خبر ذخیره شد.');
+    }
+
+    // ------------------------------------------------------------------ کپی
+    public function duplicateArticle($id)
+    {
+        $columns = $this->articleColumns();
+        $article = DB::table('articles')->where('id', $id)->first();
+        abort_if(! $article, 404, 'خبر مورد نظر یافت نشد.');
+
+        $data = [];
+        foreach ($columns as $col) {
+            if (property_exists($article, $col)) {
+                $data[$col] = $article->{$col};
+            }
+        }
+
+        $data['id'] = $this->newId($columns);
+
+        $title = trim(((string) ($article->title ?? '')) . ' (کپی)');
+        $data['title'] = mb_substr($title, 0, 191);
+        $data['slug']  = $this->makeSlug($data['title']);
+
+        if (in_array('status', $columns, true))     $data['status'] = 'DRAFT';
+        if (in_array('viewCount', $columns, true))  $data['viewCount'] = 0;
+        if (in_array('view_count', $columns, true)) $data['view_count'] = 0;
+        if (in_array('publishedAt', $columns, true))  $data['publishedAt'] = null;
+        if (in_array('published_at', $columns, true)) $data['published_at'] = null;
+
+        foreach (['created_at', 'updated_at', 'createdAt', 'updatedAt'] as $tc) {
+            if (in_array($tc, $columns, true)) $data[$tc] = now();
+        }
+
+        DB::table('articles')->insert($data);
+
+        return back()->with('success', 'خبر کپی شد و به‌صورت پیش‌نویس ذخیره گردید.');
+    }
+
+    // ------------------------------------------------------------------ وضعیت انتشار
+    public function setArticleStatus(Request $request, $id)
+    {
+        $data = $request->validate([
+            'status' => 'required|in:DRAFT,PUBLISHED,ARCHIVED',
+        ]);
+
+        $article = DB::table('articles')->where('id', $id)->first();
+        abort_if(! $article, 404, 'خبر مورد نظر یافت نشد.');
+
+        $columns = $this->articleColumns();
+        $update = ['status' => $data['status']];
+
+        foreach (['updated_at', 'updatedAt'] as $tc) {
+            if (in_array($tc, $columns, true)) $update[$tc] = now();
+        }
+
+        DB::table('articles')->where('id', $id)->update($update);
+
+        return back()->with('success', $data['status'] === 'DRAFT'
+            ? 'خبر از انتشار خارج و به پیش‌نویس منتقل شد.'
+            : 'وضعیت خبر به‌روزرسانی شد.');
+    }
+
+    // ------------------------------------------------------------------ لینک کوتاه
+    public function articleShortlink($id)
+    {
+        $article = DB::table('articles')->where('id', $id)->first();
+        abort_if(! $article, 404, 'خبر مورد نظر یافت نشد.');
+
+        $url = url('/news/' . $article->slug);
+
+        foreach (DB::table('site_settings')->where('key', 'like', 'short.%')->get() as $row) {
+            $v = json_decode((string) $row->value, true) ?: [];
+            if (($v['url'] ?? null) === $url) {
+                $code = substr($row->key, 6);
+                return response()->json(['code' => $code, 'url' => url('/s/' . $code), 'created' => false]);
+            }
+        }
+
+        do {
+            $code = strtolower(Str::random(6));
+        } while (DB::table('site_settings')->where('key', 'short.' . $code)->exists());
+
+        SettingStore::set('short.' . $code, json_encode(['url' => $url, 'hits' => 0], JSON_UNESCAPED_UNICODE));
+
+        return response()->json(['code' => $code, 'url' => url('/s/' . $code), 'created' => true]);
     }
 
     // ------------------------------------------------------------------ حذف
