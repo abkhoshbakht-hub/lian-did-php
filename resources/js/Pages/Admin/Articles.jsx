@@ -52,7 +52,7 @@ async function copyToClipboard(text) {
     }
 }
 
-function ArticleActionsMenu({ article, onDelete, onPreview, onNotify }) {
+function ArticleActionsMenu({ article, onDelete, onPreview, onNotify, onSuggest }) {
     const [pos, setPos] = useState(null);
     const btnRef = useRef(null);
     const menuRef = useRef(null);
@@ -98,7 +98,7 @@ function ArticleActionsMenu({ article, onDelete, onPreview, onNotify }) {
 
     const duplicate = () => {
         setPos(null);
-        router.post(`/admin/articles/${article.id}/duplicate`, {}, { preserveScroll: true });
+        router.post(`/admin/articles/${article.id}/duplicate`, {}, { preserveScroll: false });
     };
 
     const shortlink = async () => {
@@ -220,9 +220,9 @@ function ArticleActionsMenu({ article, onDelete, onPreview, onNotify }) {
                         پیش‌نمایش
                     </button>
 
-                    <Link
-                        href="/admin/submissions"
-                        onClick={() => setPos(null)}
+                    <button
+                        type="button"
+                        onClick={() => { setPos(null); onSuggest(); }}
                         className={`${itemCls} text-gray-700 hover:bg-teal-50 hover:text-teal-800`}
                     >
                         <ActionIcon className="text-teal-500">
@@ -230,7 +230,7 @@ function ArticleActionsMenu({ article, onDelete, onPreview, onNotify }) {
                             <path d="M22 2 11 13" />
                         </ActionIcon>
                         پیشنهاد خبر
-                    </Link>
+                    </button>
 
                     <button
                         type="button"
@@ -305,6 +305,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
     const [crop, setCrop] = useState(null); // { src, name }
     const [preview, setPreview] = useState(null);
     const [toast, setToast] = useState(null);
+    const [suggest, setSuggest] = useState(null);
 
     useEffect(() => {
         if (!toast) return;
@@ -313,11 +314,13 @@ export default function AdminArticles({ articles = [], categories = [], filters 
     }, [toast]);
 
     useEffect(() => {
-        if (!preview) return;
-        const onKey = (e) => { if (e.key === 'Escape') setPreview(null); };
+        if (!preview && !suggest) return;
+        const onKey = (e) => {
+            if (e.key === 'Escape') { setPreview(null); setSuggest(null); }
+        };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
-    }, [preview]);
+    }, [preview, suggest]);
 
     const onCropDone = (blob) => {
         const f = crop ? crop.name : 'image.webp';
@@ -434,7 +437,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
 
             <div className="flex flex-col">
             {/* ── جدول ── */}
-            <div className={`${isNew ? 'order-2' : ''} bg-white rounded-2xl border border-gray-200 overflow-hidden`}>
+            <div className={`${isNew || editing ? 'order-2' : ''} bg-white rounded-2xl border border-gray-200 overflow-hidden`}>
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="text-sm font-black text-[#1B365D]">{articles.length} خبر</h2>
                 </div>
@@ -483,6 +486,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                                             article={a}
                                             onDelete={() => del(a.id, a.title)}
                                             onPreview={() => setPreview(a)}
+                                            onSuggest={() => setSuggest(a)}
                                             onNotify={setToast}
                                         />
                                     </td>
@@ -494,7 +498,7 @@ export default function AdminArticles({ articles = [], categories = [], filters 
             </div>
 
             {/* ── فرم ── */}
-            <div className={isNew ? 'order-1 mb-6 bg-white rounded-2xl border border-gray-200 p-6' : 'mt-6 bg-white rounded-2xl border border-gray-200 p-6'}>
+            <div className={isNew || editing ? 'order-1 mb-6 bg-white rounded-2xl border border-gray-200 p-6' : 'mt-6 bg-white rounded-2xl border border-gray-200 p-6'}>
                 <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-100">
                     <h2 className="text-base font-black text-[#1B365D]">
                         {editing ? `ویرایش: ${editing.title.slice(0, 40)}` : 'افزودن خبر جدید'}
@@ -649,6 +653,67 @@ export default function AdminArticles({ articles = [], categories = [], filters 
                 </form>
             </div>
             </div>
+
+            {/* ── پیشنهاد خبر ── */}
+            {suggest && (
+                <div
+                    className="fixed inset-0 z-[9998] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm"
+                    onClick={() => setSuggest(null)}
+                >
+                    <div
+                        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-bold text-[#C9A96E]">پیشنهاد خبر</p>
+                                <h3 className="mt-0.5 text-sm font-black text-[#1B365D]">محل نمایش پیشنهادی را انتخاب کنید</h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSuggest(null)}
+                                aria-label="بستن پیشنهاد خبر"
+                                className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                    strokeLinecap="round" className="h-4 w-4" aria-hidden="true">
+                                    <path d="M18 6 6 18M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="p-4">
+                            <p className="mb-3 line-clamp-2 text-xs font-bold text-gray-500">{suggest.title}</p>
+                            <div className="space-y-2">
+                                {PLACEMENTS.map((p) => (
+                                    <button
+                                        key={p.value}
+                                        type="button"
+                                        onClick={() => {
+                                            const id = suggest.id;
+                                            setSuggest(null);
+                                            router.post(`/admin/articles/${id}/placement`, { placement: p.value }, { preserveScroll: true });
+                                        }}
+                                        className={`flex w-full items-center justify-between rounded-xl border px-4 py-2.5 text-right text-xs font-bold transition-colors ${
+                                            suggest.placement === p.value
+                                                ? 'border-[#1B365D] bg-[#1B365D]/5 text-[#1B365D]'
+                                                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-[#C9A96E] hover:bg-amber-50'
+                                        }`}
+                                    >
+                                        <span>{p.label}</span>
+                                        <span className={`text-[10px] ${suggest.placement === p.value ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                            {suggest.placement === p.value ? 'فعلی' : 'انتخاب'}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="mt-3 text-[10px] leading-5 text-gray-400">
+                                با انتخاب هر گزینه، محل نمایش این خبر در صفحه اصلی به‌روزرسانی می‌شود.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── پیش‌نمایش خبر ── */}
             {preview && (

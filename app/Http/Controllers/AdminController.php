@@ -224,6 +224,10 @@ class AdminController extends Controller
         if (in_array('view_count', $columns, true)) $data['view_count'] = 0;
         if (in_array('publishedAt', $columns, true))  $data['publishedAt'] = null;
         if (in_array('published_at', $columns, true)) $data['published_at'] = null;
+        if (in_array('placement', $columns, true))    $data['placement'] = 'latest';
+        if (in_array('isFeatured', $columns, true))   $data['isFeatured'] = 0;
+        if (in_array('isBreaking', $columns, true))   $data['isBreaking'] = 0;
+        if (in_array('isPinned', $columns, true))     $data['isPinned'] = 0;
 
         foreach (['created_at', 'updated_at', 'createdAt', 'updatedAt'] as $tc) {
             if (in_array($tc, $columns, true)) $data[$tc] = now();
@@ -231,7 +235,8 @@ class AdminController extends Controller
 
         DB::table('articles')->insert($data);
 
-        return back()->with('success', 'خبر کپی شد و به‌صورت پیش‌نویس ذخیره گردید.');
+        return redirect('/admin/articles?edit=' . $data['id'])
+            ->with('success', 'خبر کپی شد؛ نسخهٔ جدید برای ویرایش باز شد.');
     }
 
     // ------------------------------------------------------------------ وضعیت انتشار
