@@ -22,7 +22,7 @@
         }
         if ($ogArticle) {
             $ogDesc = $ogArticle->excerpt ?: mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($ogArticle->content))), 0, 180);
-            $ogImage = url('/og/' . $ogArticle->id . '.jpg');
+            $ogImage = preg_replace('#^https:#', 'http:', url('/og/' . $ogArticle->id . '.jpg'));
         }
     @endphp
     @if($ogArticle)

@@ -317,7 +317,7 @@ Route::get('/s/{code}', function ($code) {
     $ogDesc = $article
         ? ($article->excerpt ?: mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($article->content))), 0, 180))
         : 'پایگاه خبری تحلیلی لیان دید - اخبار لحظه‌ای استان بوشهر و ایران';
-    $ogImage = $article ? url('/og/' . $article->id . '.jpg') : url('/logo.png');
+    $ogImage = $article ? preg_replace('#^https:#', 'http:', url('/og/' . $article->id . '.jpg')) : url('/logo.png');
 
     $html = '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8">'
         . '<meta http-equiv="refresh" content="0;url=' . e($url) . '">'
