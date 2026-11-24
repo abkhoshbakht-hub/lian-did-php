@@ -58,6 +58,49 @@ Route::get('/news/{slug}', function ($slug) {
     ]);
 })->name('news.show');
 
+// OG JPEG preview image for social networks
+Route::get('/og/{article}.jpg', function ($id) {
+    $article = DB::table('articles')->where('id', $id)->first();
+    $src = $article?->featuredImage;
+    if (! $src) {
+        $src = public_path('logo.png');
+    } elseif (! preg_match('#^https?://#i', $src)) {
+        $src = url($src);
+    }
+
+    $ctx = stream_context_create(['http' => [
+        'header'  => "User-Agent: Mozilla/5.0\r\n",
+        'timeout' => 12,
+    ]]);
+    $bytes = @file_get_contents($src, false, $ctx);
+    if ($bytes === false) { abort(404); }
+
+    $img = @imagecreatefromstring($bytes);
+    if (! $img) { abort(404); }
+
+    $w = imagesx($img);
+    $h = imagesy($img);
+    $scale = min(1200 / $w, 630 / $h);
+    if ($scale > 1) { $scale = 1; }
+    $nw = max(1, (int) round($w * $scale));
+    $nh = max(1, (int) round($h * $scale));
+
+    $out = imagecreatetruecolor($nw, $nh);
+    $white = imagecolorallocate($out, 255, 255, 255);
+    imagefill($out, 0, 0, $white);
+    imagecopyresampled($out, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
+
+    ob_start();
+    imagejpeg($out, null, 85);
+    $jpg = ob_get_clean();
+    imagedestroy($img);
+    imagedestroy($out);
+
+    return response($jpg, 200)
+        ->header('Content-Type', 'image/jpeg')
+        ->header('Cache-Control', 'public, max-age=86400');
+})->where('article', '[A-Za-z0-9_-]+')->name('og.image');
+
 // ---------------------------------------------------------------- دسته‌بندی‌ها
 Route::get('/category/bushahr/cities', function () {
     return Inertia\Inertia::render('CityMap', [
@@ -261,7 +304,36 @@ Route::get('/s/{code}', function ($code) {
         'value' => json_encode(['url' => $url, 'hits' => (int) ($data['hits'] ?? 0) + 1], JSON_UNESCAPED_UNICODE),
     ]);
 
-    return redirect()->away($url);
+    // رباتهای پیشنمایش (بله/تلگرام) محتوای ریدایرکت را نمیبینند؛ HTML باOG و meta refresh برمیگردانیم
+    $slug = null;
+    if (preg_match('~/news/([^?#]+)~u', $url, $m)) {
+        $slug = urldecode($m[1]);
+    }
+    $article = $slug
+        ? DB::table('articles')->where('slug', $slug)->where('status', 'PUBLISHED')->first()
+        : null;
+
+    $ogTitle = $article?->title ?: 'لیان دید';
+    $ogDesc = $article
+        ? ($article->excerpt ?: mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($article->content))), 0, 180))
+        : 'پایگاه خبری تحلیلی لیان دید - اخبار لحظه‌ای استان بوشهر و ایران';
+    $ogImage = $article ? url('/og/' . $article->id . '.jpg') : url('/logo.png');
+
+    $html = '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8">'
+        . '<meta http-equiv="refresh" content="0;url=' . e($url) . '">'
+        . '<title>' . e($ogTitle) . '</title>'
+        . '<meta property="og:type" content="article">'
+        . '<meta property="og:site_name" content="لیان دید">'
+        . '<meta property="og:title" content="' . e($ogTitle) . '">'
+        . '<meta property="og:description" content="' . e($ogDesc) . '">'
+        . '<meta property="og:url" content="' . e(url()->current()) . '">'
+        . '<meta property="og:image" content="' . e($ogImage) . '">'
+        . '<meta name="twitter:card" content="summary_large_image">'
+        . '<meta name="twitter:title" content="' . e($ogTitle) . '">'
+        . '<meta name="twitter:image" content="' . e($ogImage) . '">'
+        . '</head><body><a href="' . e($url) . '">' . e($ogTitle) . '</a></body></html>';
+
+    return response($html, 200)->header('Content-Type', 'text/html; charset=utf-8');
 })->name('shortlink');
 
 // ---------------------------------------------------------------- پروفایل کاربر
