@@ -9,6 +9,44 @@
     <meta name="description" content="پایگاه خبری تحلیلی لیان دید - اخبار لحظه‌ای استان بوشهر و ایران با پروانه انتشار ۹۶۲۲">
     <meta name="keywords" content="خبر, تحلیل, بوشهر, ایران, اخبار سیاسی, اخبار اقتصادی">
     
+    {{-- پیش‌نمایش لینک در شبکه‌های اجتماعی (تلگرام و ...) --}}
+    @php
+        $ogArticle = null;
+        $ogImage = null;
+        if (preg_match('#^news/(.+)$#u', request()->path(), $ogMatch)) {
+            $ogArticle = \Illuminate\Support\Facades\DB::table('articles')
+                ->where('slug', urldecode($ogMatch[1]))
+                ->where('status', 'PUBLISHED')
+                ->first();
+        }
+        if ($ogArticle) {
+            $ogDesc = $ogArticle->excerpt ?: mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($ogArticle->content))), 0, 180);
+            $ogImage = $ogArticle->featuredImage;
+            if ($ogImage && !preg_match('#^https?://#i', $ogImage)) {
+                $ogImage = url($ogImage);
+            }
+        }
+    @endphp
+    @if($ogArticle)
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="لیان دید" />
+        <meta property="og:locale" content="fa_IR" />
+        <meta property="og:title" content="{{ $ogArticle->title }}" />
+        <meta property="og:description" content="{{ $ogDesc }}" />
+        <meta property="og:url" content="{{ url()->current() }}" />
+        @if($ogImage)
+            <meta property="og:image" content="{{ $ogImage }}" />
+            <meta property="og:image:secure_url" content="{{ $ogImage }}" />
+            <meta property="og:image:type" content="image/webp" />
+        @endif
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="{{ $ogArticle->title }}" />
+        <meta name="twitter:description" content="{{ $ogDesc }}" />
+        @if($ogImage)
+            <meta name="twitter:image" content="{{ $ogImage }}" />
+        @endif
+    @endif
+    
     <!-- Google Fonts: Vazirmatn -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
