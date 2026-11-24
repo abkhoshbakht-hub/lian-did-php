@@ -29,7 +29,7 @@ class AdminController extends Controller
         if ($slug === '') {
             $slug = 'news';
         }
-        $slug = mb_substr($slug, 0, 200);
+        $slug = mb_substr($slug, 0, 180);
 
         $base = $slug;
         $i = 1;
@@ -75,6 +75,14 @@ class AdminController extends Controller
             'isBreaking'    => $request->boolean('isBreaking') ? 1 : 0,
             'isPinned'      => $request->boolean('isPinned') ? 1 : 0,
         ];
+
+        // جلوگیری از خطای 1406 (Data too long) روی ستون‌های varchar(191)
+        $data['title'] = mb_substr((string) $data['title'], 0, 255);
+        foreach (['subtitle', 'source', 'sourceUrl', 'metaTitle', 'metaKeywords', 'region'] as $short) {
+            if (isset($data[$short]) && is_string($data[$short])) {
+                $data[$short] = mb_substr($data[$short], 0, 191);
+            }
+        }
 
         if (in_array('viewCount', $columns, true))  $data['viewCount'] = 0;
         if (in_array('view_count', $columns, true)) $data['view_count'] = 0;
@@ -216,7 +224,7 @@ class AdminController extends Controller
         $data['id'] = $this->newId($columns);
 
         $title = trim(((string) ($article->title ?? '')) . ' (کپی)');
-        $data['title'] = mb_substr($title, 0, 191);
+        $data['title'] = mb_substr($title, 0, 255);
         $data['slug']  = $this->makeSlug($data['title']);
 
         if (in_array('status', $columns, true))     $data['status'] = 'DRAFT';
