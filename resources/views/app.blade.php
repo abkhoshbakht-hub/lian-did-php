@@ -2,6 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
     <!-- Meta Tags -->
@@ -34,13 +35,17 @@
         @if($ogImage)
             <meta property="og:image" content="{{ $ogImage }}" />
             <meta property="og:image:secure_url" content="{{ $ogImage }}" />
-            <meta property="og:image:type" content="image/webp" />
+            <meta property="og:image:type" content="image/jpeg" />
         @endif
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="{{ $ogArticle->title }}" />
         <meta name="twitter:description" content="{{ $ogDesc }}" />
         @if($ogImage)
             <meta name="twitter:image" content="{{ $ogImage }}" />
+            <meta name="twitter:image:src" content="{{ $ogImage }}" />
+            <meta name="og:image" content="{{ $ogImage }}" />
+            <meta name="og:title" content="{{ $ogArticle->title }}" />
+            <meta name="og:description" content="{{ $ogDesc }}" />
         @endif
     @endif
     

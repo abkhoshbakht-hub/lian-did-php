@@ -319,7 +319,7 @@ Route::get('/s/{code}', function ($code) {
         : 'پایگاه خبری تحلیلی لیان دید - اخبار لحظه‌ای استان بوشهر و ایران';
     $ogImage = $article ? url('/og/' . $article->id . '.jpg') : url('/logo.png');
 
-    $html = '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8">'
+    $html = '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8">'
         . '<meta http-equiv="refresh" content="0;url=' . e($url) . '">'
         . '<title>' . e($ogTitle) . '</title>'
         . '<meta property="og:type" content="article">'
@@ -331,6 +331,10 @@ Route::get('/s/{code}', function ($code) {
         . '<meta name="twitter:card" content="summary_large_image">'
         . '<meta name="twitter:title" content="' . e($ogTitle) . '">'
         . '<meta name="twitter:image" content="' . e($ogImage) . '">'
+        . '<meta name="twitter:image:src" content="' . e($ogImage) . '">'
+        . '<meta name="og:title" content="' . e($ogTitle) . '">'
+        . '<meta name="og:description" content="' . e($ogDesc) . '">'
+        . '<meta name="og:image" content="' . e($ogImage) . '">'
         . '</head><body><a href="' . e($url) . '">' . e($ogTitle) . '</a></body></html>';
 
     return response($html, 200)->header('Content-Type', 'text/html; charset=utf-8');
